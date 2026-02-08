@@ -1,0 +1,68 @@
+.lobby {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.room-info {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 1rem;
+}
+
+.room-info h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.room-info p {
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.players-list {
+  margin: 2rem 0;
+}
+
+.players-list h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.players-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.players-list li {
+  padding: 0.75rem;
+  background: #f9f9f9;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  border-left: 4px solid #667eea;
+}
+
+.lobby button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.lobby button:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.lobby button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}

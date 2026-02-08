@@ -1,0 +1,58 @@
+from flask import Blueprint, request, jsonify
+from utils.room_manager import room_manager
+
+rooms_bp = Blueprint('rooms', __name__, url_prefix='/rooms')
+
+@rooms_bp.route('', methods=['POST'])
+def create_room():
+    data = request.get_json()
+    created_by = data.get('created_by', 'Anonymous')
+    room = room_manager.create_room(created_by)
+    return jsonify(room.to_dict()), 201
+
+@rooms_bp.route('/<room_id>', methods=['GET'])
+def get_room(room_id):
+    room = room_manager.get_room(room_id)
+    if not room:
+        return jsonify({'error': 'Room not found'}), 404
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/players', methods=['POST'])
+def add_player(room_id):
+    data = request.get_json()
+    player_name = data.get('name', 'Player')
+    player, error = room_manager.add_player_to_room(room_id, player_name)
+    if error:
+        return jsonify({'error': error}), 400
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/players', methods=['GET'])
+def get_players(room_id):
+    room = room_manager.get_room(room_id)
+    if not room:
+        return jsonify({'error': 'Room not found'}), 404
+    return jsonify({
+        'room_id': room_id,
+        'players': [p.to_dict() for p in room.players],
+        'count': len(room.players)
+    }), 200
+
+@rooms_bp.route('/<room_id>/players/<player_id>', methods=['DELETE'])
+def remove_player(room_id, player_id):
+    success = room_manager.remove_player_from_room(room_id, player_id)
+    if not success:
+        return jsonify({'error': 'Room not found'}), 404
+    
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/players/<player_id>/heartbeat', methods=['POST'])
+def player_heartbeat(room_id, player_id):
+    """Keep-alive endpoint to track active players"""
+    success = room_manager.heartbeat(room_id, player_id)
+    if not success:
+        return jsonify({'error': 'Player or room not found'}), 404
+    
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
