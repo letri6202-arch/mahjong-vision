@@ -11,7 +11,7 @@ function JoinRoom({ onRoomCreated, onRoomJoined }) {
   const handleCreateRoom = async (e) => {
     e.preventDefault()
     if (!playerName.trim()) {
-      setError('Please enter your name')
+      setError('Please enter your name') 
       return
     }
 

@@ -1,0 +1,93 @@
+.game-board {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 1rem;
+}
+
+.game-header h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.game-header p {
+  color: #666;
+}
+
+.scoreboard {
+  margin-bottom: 2rem;
+}
+
+.scoreboard h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.score-card {
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.score-card.current {
+  background: #e3f2fd;
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.player-name {
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+
+.player-score {
+  font-size: 2rem;
+  color: #667eea;
+  font-weight: bold;
+  margin: 0;
+}
+
+.game-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.game-actions button {
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.game-actions button:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.game-actions button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import client from './api/client'
 import JoinRoom from './components/JoinRoom'
 import Lobby from './components/Lobby'
+import GameBoard from './components/GameBoard'
 import './styles/App.css'
 
 function App() {
@@ -9,7 +11,6 @@ function App() {
 
   const handleRoomCreated = (room) => {
     setCurrentRoom(room)
-    // Get the creator's name from the first player in the room
     if (room.players.length > 0) {
       setPlayerName(room.players[0].name)
     }
@@ -17,11 +18,26 @@ function App() {
 
   const handleRoomJoined = (room) => {
     setCurrentRoom(room)
-    // Get the current player's name from the most recent player added
     if (room.players.length > 0) {
       setPlayerName(room.players[room.players.length - 1].name)
     }
   }
+
+  // Periodically refresh room state to catch status changes
+  useEffect(() => {
+    if (!currentRoom) return
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await client.get(`/rooms/${currentRoom.id}`)
+        setCurrentRoom(response.data)
+      } catch (err) {
+        console.error('Failed to refresh room')
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [currentRoom?.id])
 
   const handleLeaveRoom = () => {
     setCurrentRoom(null)
@@ -34,6 +50,12 @@ function App() {
         <JoinRoom 
           onRoomCreated={handleRoomCreated}
           onRoomJoined={handleRoomJoined}
+        />
+      ) : currentRoom.status === 'in-game' ? (
+        <GameBoard 
+          room={currentRoom}
+          playerName={playerName}
+          onLeave={handleLeaveRoom}
         />
       ) : (
         <Lobby 

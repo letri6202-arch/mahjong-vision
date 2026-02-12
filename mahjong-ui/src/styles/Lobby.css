@@ -44,25 +44,52 @@
   margin-bottom: 0.5rem;
   border-radius: 4px;
   border-left: 4px solid #667eea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.lobby button {
-  width: 100%;
-  padding: 0.75rem;
-  background: #e74c3c;
+.players-list li.ready {
+  background: #e8f5e9;
+  border-left-color: #4caf50;
+}
+
+.badge {
+  background: #4caf50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.lobby-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.lobby-actions button {
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
   color: white;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
+  flex: 1;
 }
 
-.lobby button:hover:not(:disabled) {
-  background: #c0392b;
+.lobby-actions button.ready {
+  background: #4caf50;
 }
 
-.lobby button:disabled {
+.lobby-actions button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.lobby-actions button:disabled {
   background: #ccc;
   cursor: not-allowed;
 }

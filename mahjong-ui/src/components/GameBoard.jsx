@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import client from '../api/client'
-import '../styles/Lobby.css'
+import HandSubmissionForm from './HandSubmissionForm'
+import '../styles/GameBoard.css'
 
-function Lobby({ room, playerName, onLeave }) {
+function GameBoard({ room, playerName, onLeave }) {
   const [updatedRoom, setUpdatedRoom] = useState(room)
   const [loading, setLoading] = useState(false)
   const [playerId, setPlayerId] = useState(null)
@@ -29,25 +30,22 @@ function Lobby({ room, playerName, onLeave }) {
       } catch (err) {
         console.error('Failed to refresh room or heartbeat')
       }
-    }, 2000)
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [room.id, playerId])
 
-  const handleToggleReady = async () => {
-    if (!playerId) return
-    setLoading(true)
+  const handleHandSubmitted = async () => {
+    // Refresh room after hand submission
     try {
-      const response = await client.post(`/rooms/${room.id}/players/${playerId}/ready`)
+      const response = await client.get(`/rooms/${room.id}`)
       setUpdatedRoom(response.data)
     } catch (err) {
-      console.error('Failed to toggle ready')
-    } finally {
-      setLoading(false)
+      console.error('Failed to refresh room')
     }
   }
 
-  const handleLeaveRoom = async () => {
+  const handleLeaveGame = async () => {
     setLoading(true)
     try {
       if (playerId) {
@@ -55,49 +53,47 @@ function Lobby({ room, playerName, onLeave }) {
       }
       onLeave()
     } catch (err) {
-      console.error('Failed to leave room')
+      console.error('Failed to leave game')
     } finally {
       setLoading(false)
     }
   }
 
-  const currentPlayer = updatedRoom.players.find(p => p.name === playerName)
-  const isReady = currentPlayer?.ready || false
-
   return (
-    <div className="lobby">
-      <div className="room-info">
+    <div className="game-board">
+      <div className="game-header">
         <h2>Room: {updatedRoom.id}</h2>
-        <p>Status: {updatedRoom.status}</p>
-        <p>Players: {updatedRoom.player_count}/{updatedRoom.max_players}</p>
+        <p>Round: {updatedRoom.current_round}</p>
       </div>
 
-      <div className="players-list">
-        <h3>Players</h3>
-        <ul>
+      <div className="scoreboard">
+        <h3>Scores</h3>
+        <div className="scores-grid">
           {updatedRoom.players.map((player) => (
-            <li key={player.id} className={player.ready ? 'ready' : ''}>
-              {player.name} - Score: {player.score}
-              {player.ready && <span className="badge">✓ Ready</span>}
-            </li>
+            <div key={player.id} className={`score-card ${player.name === playerName ? 'current' : ''}`}>
+              <p className="player-name">{player.name}</p>
+              <p className="player-score">{player.score}</p>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
-      <div className="lobby-actions">
-        <button 
-          onClick={handleToggleReady} 
-          disabled={loading}
-          className={isReady ? 'ready' : ''}
-        >
-          {loading ? 'Loading...' : (isReady ? 'Not Ready' : 'Ready')}
-        </button>
-        <button onClick={handleLeaveRoom} disabled={loading}>
-          {loading ? 'Leaving...' : 'Leave Room'}
+      {playerId && (
+        <HandSubmissionForm 
+          room={updatedRoom}
+          playerId={playerId}
+          playerName={playerName}
+          onHandSubmitted={handleHandSubmitted}
+        />
+      )}
+
+      <div className="game-actions">
+        <button onClick={handleLeaveGame} disabled={loading}>
+          Leave Game
         </button>
       </div>
     </div>
   )
 }
 
-export default Lobby
+export default GameBoard
