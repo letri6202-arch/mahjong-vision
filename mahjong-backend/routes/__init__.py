@@ -47,6 +47,29 @@ def remove_player(room_id, player_id):
     room = room_manager.get_room(room_id)
     return jsonify(room.to_dict()), 200
 
+@rooms_bp.route('/<room_id>/players/<player_id>/ready', methods=['POST'])
+def toggle_ready(room_id, player_id):
+    """Toggle player's ready status"""
+    success = room_manager.toggle_player_ready(room_id, player_id)
+    if not success:
+        return jsonify({'error': 'Player or room not found'}), 404
+    
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/hands', methods=['POST'])
+def submit_hand(room_id):
+    """Submit a winning hand and distribute points"""
+    data = request.get_json()
+    winner_id = data.get('winner_id')
+    hand_data = data.get('hand_data', {})
+    
+    room, error = room_manager.submit_hand(room_id, winner_id, hand_data)
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify(room.to_dict()), 200
+
 @rooms_bp.route('/<room_id>/players/<player_id>/heartbeat', methods=['POST'])
 def player_heartbeat(room_id, player_id):
     """Keep-alive endpoint to track active players"""

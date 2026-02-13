@@ -1,4 +1,4 @@
-from models import Room, Player
+from models import Room, Player, Round
 
 class RoomManager:
     def __init__(self):
@@ -17,6 +17,7 @@ class RoomManager:
         room = self.rooms.get(room_id)
         if room:
             room.cleanup_stale_players()
+            room.update_status()
         return room
     
     def add_player_to_room(self, room_id, player_name):
@@ -24,6 +25,8 @@ class RoomManager:
         room = self.get_room(room_id)
         if not room:
             return None, 'Room not found'
+        if room.status == 'in-game':
+            return None, 'Game is in progress - cannot join'
         if len(room.players) >= room.max_players:
             return None, 'Room is full'
         
@@ -38,6 +41,71 @@ class RoomManager:
             return False
         room.players = [p for p in room.players if p.id != player_id]
         return True
+    
+    def toggle_player_ready(self, room_id, player_id):
+        """Toggle a player's ready status"""
+        room = self.get_room(room_id)
+        if not room:
+            return False
+        
+        for player in room.players:
+            if player.id == player_id:
+                player.toggle_ready()
+                room.update_status()
+                return True
+        return False
+    
+    def submit_hand(self, room_id, winner_id, hand_data):
+        """
+        Submit a winning hand and distribute points
+        hand_data: {
+            'tiles': [],
+            'win_type': 'self-draw' or 'discard',
+            'points': int,
+            'payments': {player_id: points_paid, ...}
+        }
+        """
+        room = self.get_room(room_id)
+        if not room:
+            return None, 'Room not found'
+        
+        # Find winner
+        winner = None
+        for player in room.players:
+            if player.id == winner_id:
+                winner = player
+                break
+        
+        if not winner:
+            return None, 'Player not found'
+        
+        # Create round record
+        round_obj = Round(room.current_round, winner_id, winner.name)
+        round_obj.tiles = hand_data.get('tiles', [])
+        round_obj.win_type = hand_data.get('win_type', '')
+        round_obj.points = hand_data.get('points', 0)
+        round_obj.payments = hand_data.get('payments', {})
+        
+        # Update scores
+        winner.score += round_obj.points
+        
+        for player_id, payment in round_obj.payments.items():
+            for player in room.players:
+                if player.id == player_id:
+                    player.score -= payment
+                    break
+        
+        # Record round
+        room.rounds.append(round_obj)
+        
+        # Move to next round
+        room.current_round += 1
+        
+        # Reset ready statuses for next round
+        for player in room.players:
+            player.ready = False
+        
+        return room, None
     
     def heartbeat(self, room_id, player_id):
         """Update player's last_seen timestamp"""
