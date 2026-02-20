@@ -1,5 +1,5 @@
 from models import Room, Player, Round
-
+from test_mahjong import BasicCalculator # Importing to ensure hand calculation logic is available
 class RoomManager:
     def __init__(self):
         self.rooms = {}
@@ -65,6 +65,7 @@ class RoomManager:
             'payments': {player_id: points_paid, ...}
         }
         """
+        point_calculator = BasicCalculator()
         room = self.get_room(room_id)
         if not room:
             return None, 'Room not found'
@@ -83,19 +84,16 @@ class RoomManager:
         round_obj = Round(room.current_round, winner_id, winner.name)
         round_obj.tiles = hand_data.get('tiles', [])
         round_obj.win_type = hand_data.get('win_type', '')
-        round_obj.points = hand_data.get('points', 0)
-        round_obj.payments = hand_data.get('payments', {})
-        
+        winning_tile = hand_data.get('winningTile', None)
+        result = point_calculator.calculate_hand(round_obj.tiles, winning_tile)  # Calculate points based on hand
+        points = result.cost["main"]
+        print(f"Calculated points for hand: {points}")
+
         # Update scores
-        winner.score += round_obj.points
-        
-        for player_id, payment in round_obj.payments.items():
-            for player in room.players:
-                if player.id == player_id:
-                    player.score -= payment
-                    break
-        
+        winner.score += points  
+
         # Record round
+        round_obj.points = points
         room.rounds.append(round_obj)
         
         # Move to next round
