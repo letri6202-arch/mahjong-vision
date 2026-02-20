@@ -38,11 +38,10 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   const [payments, setPayments] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [winningTile, setWinningTile] = useState(null)
 
   // Initialize payments for losers
   const losers = room.players.filter(p => p.id !== playerId)
-
-
 
   const handleTileIncrement = (tile) => {
     setTileCounts(prev => {
@@ -147,17 +146,18 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!points || parseInt(points) <= 0) {
-      setError('Points must be greater than 0')
+    const tiles = getSelectedTiles()
+    
+    // Require a winning tile to submit a hand
+    if (!winningTile) {
+      setError('Please select a winning tile')
       return
     }
 
-    // Verify all losers have payment amounts
-    for (let loser of losers) {
-      if (!payments[loser.id]) {
-        setError('Enter payment amount for all players')
-        return
-      }
+    //Validate that the winning tile is among the selected tiles
+    if (winningTile && !tiles.includes(winningTile)) {
+      setError('Winning tile must be among the selected tiles')
+      return
     }
 
     setLoading(true)
@@ -168,8 +168,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         hand_data: {
           tiles: getSelectedTiles(),
           win_type: winType,
-          points: parseInt(points),
-          payments: payments
+          winningTile: winningTile
         }
       })
       onHandSubmitted()
@@ -182,6 +181,10 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleWinningTile = (tile) => {
+    setWinningTile(prev => prev === tile ? null : tile)
   }
 
   return (
@@ -249,31 +252,38 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         </div>
 
         <div className="form-section">
-          <label htmlFor="points">Total Points</label>
-          <input
-            id="points"
-            type="number"
-            value={points}
-            onChange={(e) => setPoints(e.target.value)}
-            placeholder="Enter total points"
-            min="1"
-          />
-        </div>
 
-        <div className="form-section">
-          <label>Payment from Each Player</label>
-          {losers.map(loser => (
-            <div key={loser.id} className="payment-input">
-              <span>{loser.name}</span>
-              <input
-                type="number"
-                value={payments[loser.id] || ''}
-                onChange={(e) => handlePaymentChange(loser.id, e.target.value)}
-                placeholder="Points paid"
-                min="0"
+          <div className="tiles-grid">
+            {TILES.map(tile => {
+              const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+              const isSelected = winningTile === tile
+              return (
+                <div
+                  key={tile}
+                  className={`tile-counter ${isSelected ? 'winning-tile-selected' : ''}`}
+                  onClick={() => handleWinningTile(tile)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="tile-display">
+                    <img src={imagePath} alt={tile} className="tile-image" />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <label>Winning Tile</label>
+          {winningTile && (
+            <div className="winning-tile-display">
+              <p>Selected: {winningTile}</p>
+              <img
+                src={`/Tile_PNGs/${tileImageMap[winningTile]}`}
+                alt={winningTile}
+                className="tile-image"
               />
             </div>
-          ))}
+          )}
+
         </div>
 
         {error && <div className="error">{error}</div>}

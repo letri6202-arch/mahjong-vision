@@ -95,3 +95,9 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+.winning-tile-selected {
+  border: 2px solid gold;
+  border-radius: 4px;
+  background-color: rgba(255, 215, 0, 0.2);
+}
