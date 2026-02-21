@@ -88,7 +88,7 @@ class RoomManager:
         result = point_calculator.calculate_hand(round_obj.tiles, winning_tile)  # Calculate points based on hand
         points = result.cost["main"]
         print(f"Calculated points for hand: {points}")
-
+        print(f"Yaku: {result.yaku}")
         # Update scores
         winner.score += points  
 
