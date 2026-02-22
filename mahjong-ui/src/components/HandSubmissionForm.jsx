@@ -191,7 +191,23 @@ const [doraIndicators, setDoraIndicators] = useState([])
         hand_data: {
           tiles: getSelectedTiles(),
           win_type: winType,
-          winningTile: winningTile
+          winningTile: winningTile,
+          config: {
+            is_tsumo: isTsumo,
+            is_riichi: isRiichi,
+            is_ippatsu: isIppatsu,
+            is_rinshan: isRinshan,
+            is_chankan: isChankan,
+            is_haitei: isHaitei,
+            is_houtei: isHoutei,
+            is_daburu_riichi: isDaburuRiichi,
+            is_nagashi_mangan: isNagashiMangan,
+            is_tenhou: isTenhou,
+            is_renhou: isRenhou,
+            is_chiihou: isChiihou,
+            player_wind: playerWind,
+            round_wind: roundWind,
+          }
         }
       })
       onHandSubmitted()
@@ -200,7 +216,8 @@ const [doraIndicators, setDoraIndicators] = useState([])
       setPoints('')
       setPayments({})
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to submit hand')
+      const message = err.response?.data?.error || err.message || 'Failed to submit hand'
+      setError(message)
     } finally {
       setLoading(false)
     }

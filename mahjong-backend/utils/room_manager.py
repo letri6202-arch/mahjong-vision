@@ -1,5 +1,9 @@
 from models import Room, Player, Round
 from test_mahjong import BasicCalculator # Importing to ensure hand calculation logic is available
+
+import json
+from flask import jsonify
+
 class RoomManager:
     def __init__(self):
         self.rooms = {}
@@ -85,7 +89,10 @@ class RoomManager:
         round_obj.tiles = hand_data.get('tiles', [])
         round_obj.win_type = hand_data.get('win_type', '')
         winning_tile = hand_data.get('winningTile', None)
-        result = point_calculator.calculate_hand(round_obj.tiles, winning_tile)  # Calculate points based on hand
+        config_data = hand_data.get('config', {})
+        result, error = point_calculator.calculate_hand(round_obj.tiles, winning_tile, config_data)  # Calculate points based on hand
+        if error:
+            return None, error
         points = result.cost["main"]
         print(f"Calculated points for hand: {points}")
         print(f"Yaku: {result.yaku}")
