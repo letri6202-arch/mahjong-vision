@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 from utils.room_manager import room_manager
 
@@ -74,6 +75,33 @@ def submit_hand(room_id):
 def player_heartbeat(room_id, player_id):
     """Keep-alive endpoint to track active players"""
     success = room_manager.heartbeat(room_id, player_id)
+    if not success:
+        return jsonify({'error': 'Player or room not found'}), 404
+    
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/players/<player_id>/set_player_wind', methods=['POST'])
+def set_player_wind(room_id, player_id):
+    data = request.get_json()
+    wind = data.get('wind')
+    prevWind = data.get('prevWind')
+    success = room_manager.set_player_wind(room_id, player_id, wind, prevWind)
+    room = room_manager.get_room(room_id)
+    
+    if not success:
+        return jsonify({'error': 'Player or room not found'}), 404
+    
+    room = room_manager.get_room(room_id)
+    return jsonify(room.to_dict()), 200
+
+@rooms_bp.route('/<room_id>/players/<player_id>/set_round_wind', methods=['POST'])
+def set_round_wind(room_id, player_id):
+    data = request.get_json()
+    wind = data.get('wind')
+    success = room_manager.set_round_wind(room_id, player_id, wind)
+    room = room_manager.get_room(room_id)
+    
     if not success:
         return jsonify({'error': 'Player or room not found'}), 404
     

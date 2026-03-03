@@ -1,0 +1,6 @@
+venv-backend/
+
+__pycache__/
+*.pyc
+certs/ssh-key.pem
+mahjong-backend/models/__pycache__/__init__.cpython-310.pyc

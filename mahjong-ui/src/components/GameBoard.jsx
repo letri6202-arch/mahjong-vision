@@ -64,6 +64,10 @@ function GameBoard({ room, playerName, onLeave }) {
       <div className="game-header">
         <h2>Room: {updatedRoom.id}</h2>
         <p>Round: {updatedRoom.current_round}</p>
+        <p>Round Wind: {updatedRoom.round_wind || 'None'}</p>
+        <p>Player: {playerName}</p>
+        <p>Player Wind: {updatedRoom.players.find(p => p.name === playerName)?.wind || 'None'}</p>
+        <p>Am I the dealer? {updatedRoom.players.find(p => p.name === playerName)?.is_dealer ? 'Yes' : 'No'}</p>
       </div>
 
       <div className="scoreboard">
