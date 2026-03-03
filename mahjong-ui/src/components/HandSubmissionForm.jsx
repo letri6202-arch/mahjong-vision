@@ -26,11 +26,13 @@ const tileImageMap = {
   'D': 'Hatsu (Green Dragon).png',
   'B': 'Haku (White Dragon).png'
 }
-  const fiveCounts = {
-    'm': 0,
-    'p': 0,
-    's': 0
-  }
+
+const fiveCounts = {
+  'm': 0,
+  'p': 0,
+  's': 0
+}
+
 function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   //Game State Information
   const [winType, setWinType] = useState('discard')
@@ -61,7 +63,13 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   const [isRenhou, setIsRenhou] = useState(false)
   const [isChiihou, setIsChiihou] = useState(false)
 
-const [doraIndicators, setDoraIndicators] = useState([])
+  const sessionPlayer = room.players.find(p => p.id === playerId)
+
+  //Player information
+  const [isDealer, setIsDealer] = useState(sessionPlayer.wind == room.roundWind) // This can be determined based on playerWind and roundWind
+  const [discardingPlayer, setDiscardingPlayer] = useState(null) // This can be determined based on winType and playerWind
+  //Dora indicators
+  const [doraIndicators, setDoraIndicators] = useState([])
   
   // Initialize payments for losers
   const losers = room.players.filter(p => p.id !== playerId)
@@ -205,9 +213,11 @@ const [doraIndicators, setDoraIndicators] = useState([])
             is_tenhou: isTenhou,
             is_renhou: isRenhou,
             is_chiihou: isChiihou,
-            player_wind: playerWind,
-            round_wind: roundWind,
-          }
+            player_wind: sessionPlayer.wind,
+            round_wind: room.roundWind,
+          },
+          isDealer: sessionPlayer.wind == room.roundWind,
+          discarderId: discardingPlayer
         }
       })
       onHandSubmitted()
@@ -280,7 +290,6 @@ const [doraIndicators, setDoraIndicators] = useState([])
             }
             <p className="selected-tiles">
               Total tiles: {getTotalTiles()}
-              {/* | Selected: {getSelectedTiles().join(', ') || 'None'} */}
             </p>
             <div className="tile-summary-selected">
               {getSelectedTiles().map((tile, index) => {
@@ -303,19 +312,9 @@ const [doraIndicators, setDoraIndicators] = useState([])
           <p>5m count: {fiveCounts['m']}</p>
           <p>5p count: {fiveCounts['p']}</p>
           <p>5s count: {fiveCounts['s']}</p>
+          <p>Player is dealer: {isDealer ? 'Yes' : 'No'}</p>
         </div>
         <hr></hr>         
-        {/* <div className="form-section">
-          <label htmlFor="win-type">Win Type</label>
-          <select 
-            id="win-type"
-            value={winType} 
-            onChange={(e) => setWinType(e.target.value)}
-          >
-            <option value="discard">Ron</option>
-            <option value="self-draw">Tsumo</option>
-          </select>
-        </div> */}
 
         <div className="form-section">
           <p className="section-label">Select the winning tile (click to select/deselect)</p>
@@ -356,49 +355,7 @@ const [doraIndicators, setDoraIndicators] = useState([])
         </div>
 
         <div className="form-section">
-          <div className="form-section">
-
-            <div className="round-player-wind">
-              <div className="wind-group">
-                <label className="section-label">Round Wind</label>
-                <div className="wind-options">
-                  {['E', 'S', 'W', 'N'].map(wind => (
-                    <label key={wind}>
-                      <input
-                        type="radio"
-                        name="round-wind"
-                        value={wind}
-                        checked={roundWind === wind}
-                        onChange={(e) => setRoundWind(e.target.value)}
-                      />
-                      <span>{wind === 'E' ? 'East' : wind === 'S' ? 'South' : wind === 'W' ? 'West' : 'North'}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="wind-group">
-                <label className="section-label">Player Wind</label>
-                <div className="wind-options">
-                  {['E', 'S', 'W', 'N'].map(wind => (
-                    <label key={wind}>
-                      <input
-                        type="radio"
-                        name="player-wind"
-                        value={wind}
-                        checked={playerWind === wind}
-                        onChange={(e) => setPlayerWind(e.target.value)}
-                      />
-                      <span>{wind === 'E' ? 'East' : wind === 'S' ? 'South' : wind === 'W' ? 'West' : 'North'}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
-          <label className="section-label">Basic Options</label>
+          <label className='section-label'>Win Type</label>
           <div className="additional-info">
             <label>
               <input 
@@ -408,6 +365,29 @@ const [doraIndicators, setDoraIndicators] = useState([])
               />
               <span>Tsumo (Self-Draw)</span>
             </label>
+            </div>
+
+            <div className="discarding-player-select">
+              <label className="section-label">Player Who Discarded</label>
+                <div className="wind-options">
+                  {losers.map(player => (
+                      <label key={player.id}>
+                        <input
+                          type="radio"
+                          name="discarding-player"
+                          value={player.id}
+                          checked={discardingPlayer === player.id}
+                          onChange={(e) => setDiscardingPlayer(e.target.value)}
+                        />
+                        <span>{player.name}</span>
+                    </label>
+                  ))}
+                </div>
+            </div>  
+              
+
+          <label className="section-label">Basic Options</label>
+          <div className="additional-info">
             <label>
               <input
                 type="checkbox"
@@ -416,10 +396,7 @@ const [doraIndicators, setDoraIndicators] = useState([])
               />
               <span>Riichi</span>
             </label>
-          </div>
 
-          <label className="section-label">Advanced Options</label>
-          <div className="advanced-options">
             <label>
               <input
                 type="checkbox"
@@ -429,6 +406,10 @@ const [doraIndicators, setDoraIndicators] = useState([])
               <span>Ippatsu</span>
             </label>
 
+          </div>
+
+          <label className="section-label">Advanced Options</label>
+          <div className="additional-info">
             <label>
               <input
                 type="checkbox"
@@ -515,7 +496,7 @@ const [doraIndicators, setDoraIndicators] = useState([])
         <button type="submit" disabled={loading} className="submit-button">
           {loading ? 'Submitting...' : 'Submit Hand'}
         </button>
-
+        <p> Player Winds: {JSON.stringify(room.selected_winds)}</p>
         {error && <div className="error">{error}</div>}
       </form>
     </div>

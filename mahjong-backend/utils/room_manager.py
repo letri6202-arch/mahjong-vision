@@ -1,3 +1,5 @@
+from unittest import result
+
 from models import Room, Player, Round
 from test_mahjong import BasicCalculator # Importing to ensure hand calculation logic is available
 
@@ -93,14 +95,44 @@ class RoomManager:
         result, error = point_calculator.calculate_hand(round_obj.tiles, winning_tile, config_data)  # Calculate points based on hand
         if error:
             return None, error
-        points = result.cost["main"]
-        print(f"Calculated points for hand: {points}")
+        
+        # Calculate points and distribute
+        is_tsumo = config_data.get('is_tsumo', False)
+        is_dealer = hand_data.get('is_dealer', False)
+
+        points_gained = result.cost["total"]
+
+        if is_tsumo:
+            if is_dealer:
+                for player in room.players:
+                    if player.id != winner_id:
+                        player.score -= result.cost["main"]
+            else:
+                for player in room.players:
+                    if player.id != winner_id:
+                        if player.is_dealer:
+                            player.score -= result.cost["main"]
+                        else:
+                            player.score -= result.cost["additional"]
+        else:
+            # Ron - only the discarder pays
+            discarderId = hand_data.get('discarderId')
+            for player in room.players:
+                if player.id == discarderId:
+                    player.score -= result.cost["main"]
+
+        # Apply points to winner
+        winner = next(p for p in room.players if p.id == winner_id)
+        winner.score += points_gained
+
+        print(f"Calculated points for hand: {points_gained}")
         print(f"Yaku: {result.yaku}")
+        print("cost details:", result.cost.get("main",-1) + result.cost["additional"])
         # Update scores
-        winner.score += points  
+        winner.score += points_gained  
 
         # Record round
-        round_obj.points = points
+        round_obj.points = points_gained
         room.rounds.append(round_obj)
         
         # Move to next round
@@ -123,5 +155,58 @@ class RoomManager:
                 player.ping()
                 return True
         return False
+    
+    def set_player_wind(self, room_id, player_id, wind, prevWind):
+        """Set a player's wind"""
+        room = self.get_room(room_id)
+        if not room:
+            return False
+        player = None
+        for p in room.players:
+            if p.id == player_id:
+                player = p
+                break
 
+        if not player:
+            return False
+        print("room round wind:", room.round_wind)
+        #Determine if player is dealer as well
+        if wind == room.round_wind:
+            player.set_dealer_status(True)
+        else:
+            player.set_dealer_status(False)
+
+        print(f"Setting wind {wind} for player {player_id} with previous wind {prevWind}")
+        # Clear previous wind if different
+        if prevWind and prevWind != wind:
+            room.selected_winds[prevWind] = None
+
+        # Clear wind if reselecting same wind
+        if prevWind and prevWind == wind:
+            room.selected_winds[prevWind] = None
+            player.set_wind(None)
+            return True
+                
+        # Assign new wind if not taken
+        if room.selected_winds.get(wind) == None:
+            room.selected_winds[wind] = player_id
+        else:
+            return False  # Wind already taken
+
+        try:
+            player.set_wind(wind)
+        except Exception as e:
+            print(f"Error setting wind: {e}")
+            return False
+        
+        return True
+    
+    def set_round_wind(self, room_id, player_id, wind):
+        """Set the round wind for the room"""
+        room = self.get_room(room_id)
+        if not room:
+            return False
+        room.set_round_wind(wind)
+        return True
+    
 room_manager = RoomManager()

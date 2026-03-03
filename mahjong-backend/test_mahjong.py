@@ -121,8 +121,17 @@ class BasicCalculator:
             case _:
                 win_tile = tiles_converter.string_to_136_array(honors=honorMap[win_tile_string])[0]
         print ("Inputted winning tile was " + win_tile_string)
+
         result = hand_calculator.estimate_hand_value(tiles, win_tile, config=hand_config)
+
+        print(f"Tiles string: {tiles_string}")
+        print(f"Win tile string: {win_tile_string}")
+        print(f"Tiles 136: {tiles}")
+        print(f"Win tile 136: {win_tile}")
+        print(f"Is riichi: {hand_config.is_riichi}")
+        print(f"Result error: {result.error}")
         print(f"Calculated hand value: {result.han}")
+        
         print("********************************")
         if result.error:
             print(f"Error calculating hand: {result.error}")

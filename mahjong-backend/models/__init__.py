@@ -11,7 +11,8 @@ class Room:
         self.status = 'waiting'  # waiting, ready, in-game, finished
         self.current_round = 0
         self.rounds = []  # Track hand history
-    
+        self.selected_winds = {'E': None, 'S': None, 'W': None, 'N': None}  # e.g., {'player_id': 'E', ...}
+        self.round_wind = None  # Current round wind
     def to_dict(self):
         return {
             'id': self.id,
@@ -22,7 +23,9 @@ class Room:
             'max_players': self.max_players,
             'status': self.status,
             'current_round': self.current_round,
-            'rounds': [r.to_dict() for r in self.rounds]
+            'rounds': [r.to_dict() for r in self.rounds],
+            "selected_winds": self.selected_winds,
+            "round_wind": self.round_wind
         }
     
     def cleanup_stale_players(self, timeout_seconds=30):
@@ -47,13 +50,19 @@ class Room:
         elif self.status == 'in-game' and not self.all_players_ready():
             self.status = 'waiting'
 
+    def set_round_wind(self, wind):
+        """Set the current round wind"""
+        self.round_wind = wind
+
 class Player:
     def __init__(self, name, player_id=None):
         self.id = player_id or str(uuid.uuid4())[:8]
         self.name = name
-        self.score = 0
+        self.score = 25000
         self.ready = False
         self.last_seen = datetime.now()
+        self.wind = None
+        self.is_dealer = False
     
     def ping(self):
         """Update last_seen timestamp"""
@@ -68,9 +77,17 @@ class Player:
             'id': self.id,
             'name': self.name,
             'score': self.score,
-            'ready': self.ready
+            'ready': self.ready,
+            'wind': self.wind,
+            'is_dealer': self.is_dealer
         }
-
+    
+    def set_wind(self, wind):
+        """Set player's wind based on input"""
+        self.wind = wind
+    def set_dealer_status(self, is_dealer):
+        """Set whether the player is dealer"""
+        self.is_dealer = is_dealer
 class Round:
     def __init__(self, round_number, winner_id, winner_name):
         self.id = str(uuid.uuid4())[:8]
