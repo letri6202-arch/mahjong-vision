@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import client from '../api/client'
 import HandSubmissionForm from './HandSubmissionForm'
-import '../styles/GameBoard.css'
+import '../styles/Gameboard.css'
 
 function GameBoard({ room, playerName, onLeave }) {
   const [updatedRoom, setUpdatedRoom] = useState(room)
