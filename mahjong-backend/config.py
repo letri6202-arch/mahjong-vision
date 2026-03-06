@@ -16,3 +16,4 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     PORT = int(os.getenv('PORT', 5000))
     HOST = os.getenv('HOST', '127.0.0.1')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+psycopg2://mahjong_user:awds@localhost:5432/mahjong_dev')

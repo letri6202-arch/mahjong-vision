@@ -9,7 +9,22 @@ function Lobby({ room, playerName, onLeave }) {
   const [loading, setLoading] = useState(false)
   const [playerId, setPlayerId] = useState(null)
   const [selectedWind, setSelectedWind] = useState(null)
-  
+
+  // Helper to parse selected_winds
+  const getSelectedWinds = (room) => {
+    if (!room.selected_winds) return { E: null, S: null, W: null, N: null };
+    if (typeof room.selected_winds === 'string') {
+      try {
+        return JSON.parse(room.selected_winds);
+      } catch {
+        return { E: null, S: null, W: null, N: null };
+      }
+    }
+    return room.selected_winds;
+  };
+
+  const selectedWinds = getSelectedWinds(updatedRoom);
+
   // Find player ID from initial room data
   useEffect(() => {
     const player = room.players.find(p => p.name === playerName)
@@ -73,7 +88,7 @@ function Lobby({ room, playerName, onLeave }) {
       <div className="room-info">
         <h2>Room: {updatedRoom.id}</h2>
         <p>Status: {updatedRoom.status}</p>
-        <p>Players: {updatedRoom.player_count}/{updatedRoom.max_players}</p>
+        <p>Players: {updatedRoom.players.length}/{updatedRoom.max_players}</p>
       </div>
 
       <div className="players-list">
@@ -89,37 +104,37 @@ function Lobby({ room, playerName, onLeave }) {
       </div>
 
       <div className="wind-selection">
-            <label className="section-label">Select the Round Wind</label>
-            <div className="wind-options">
-              {['E', 'S', 'W', 'N'].map(roundWind => (
-                <label key={roundWind}>
-                  <input
-                    type="radio"
-                    name="round-wind"
-                    value={roundWind}
-                    checked={updatedRoom.round_wind === roundWind}
-                    onChange={async (e) => {
-                      setLoading(true);
-                      try {
-                        const response = await client.post(
-                          `/rooms/${room.id}/players/${playerId}/set_round_wind`,
-                          { wind: roundWind }
-                        );
-                        setUpdatedRoom(response.data);
-                        setSelectedWind(roundWind);
-                      } catch (err) {
-                        console.error('Failed to set wind');
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                  />
-                  <span>{roundWind === 'E' ? 'East' : roundWind === 'S' ? 'South' : roundWind === 'W' ? 'West' : 'North'}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        <p>Current Round Wind: {updatedRoom.round_wind || 'None'}</p>        
+        <label className="section-label">Select the Round Wind</label>
+        <div className="wind-options">
+          {WINDS.map(roundWind => (
+            <label key={roundWind}>
+              <input
+                type="radio"
+                name="round-wind"
+                value={roundWind}
+                checked={updatedRoom.round_wind === roundWind}
+                onChange={async (e) => {
+                  setLoading(true);
+                  try {
+                    const response = await client.post(
+                      `/rooms/${room.id}/players/${playerId}/set_round_wind`,
+                      { wind: roundWind }
+                    );
+                    setUpdatedRoom(response.data);
+                    setSelectedWind(roundWind);
+                  } catch (err) {
+                    console.error('Failed to set wind');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+              <span>{roundWind === 'E' ? 'East' : roundWind === 'S' ? 'South' : roundWind === 'W' ? 'West' : 'North'}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <p>Current Round Wind: {updatedRoom.round_wind || 'None'}</p>
       {updatedRoom.round_wind === null && <p className="warning">Please select the Round wind before readying up.</p>}
 
       {/* Wind Selection */}
@@ -145,9 +160,7 @@ function Lobby({ room, playerName, onLeave }) {
               }}
               className={playerWind === wind ? 'selected' : ''}
               disabled={
-                (updatedRoom.selected_winds &&
-                updatedRoom.selected_winds[wind] !== null &&
-                updatedRoom.selected_winds[wind] !== playerId) || !updatedRoom.round_wind
+                (selectedWinds[wind] !== null && selectedWinds[wind] !== playerId) || !updatedRoom.round_wind
               }
             >
               {wind === 'E' ? 'East' : wind === 'S' ? 'South' : wind === 'W' ? 'West' : 'North'}
@@ -155,11 +168,21 @@ function Lobby({ room, playerName, onLeave }) {
           ))}
         </div>
       </div>
-      
+
+      <div>
+        <h4>Wind Assignments:</h4>
+        <ul>
+          {WINDS.map(wind => (
+            <li key={wind}>
+              {wind}: {selectedWinds[wind] || 'Available'}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <p>Your selected wind: {playerWind || 'None'}</p>
       {!updatedRoom.round_wind && <p className="warning">Please select the Round Wind before selecting your player wind</p>}
       {playerWind === null && updatedRoom.round_wind && <p className="warning">Please select your wind before readying up.</p>}
-      {/* <p>updatedRoom.selected_winds: {JSON.stringify(updatedRoom.selected_winds)}</p> */}
 
       <div className="lobby-actions">
         <button
