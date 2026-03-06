@@ -73,12 +73,18 @@ function GameBoard({ room, playerName, onLeave }) {
       <div className="scoreboard">
         <h3>Scores</h3>
         <div className="scores-grid">
-          {updatedRoom.players.map((player) => (
-            <div key={player.id} className={`score-card ${player.name === playerName ? 'current' : ''}`}>
-              <p className="player-name">{player.name}</p>
-              <p className="player-score">{player.score}</p>
-            </div>
-          ))}
+          {[...updatedRoom.players]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((player) => (
+              <div key={player.id} className={`score-scroll ${player.name === playerName ? 'current' : ''}`}>
+                <div className="scroll-bg">
+                  <p className="player-name-scroll">{player.name}</p>
+                  <p className="player-score-scroll">{player.score}</p>
+                  <p className="player-wind-scroll">{player.wind}</p>
+                  {player.is_winner && <span className="winner-scroll">Winner</span>}
+                </div>
+              </div>
+            ))}
         </div>
       </div>
 

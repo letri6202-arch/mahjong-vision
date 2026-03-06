@@ -61,6 +61,7 @@ function JoinRoom({ onRoomCreated, onRoomJoined }) {
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           disabled={loading}
+          maxlength={8}
         />
 
         <button onClick={handleCreateRoom} disabled={loading}>

@@ -83,6 +83,11 @@ function Lobby({ room, playerName, onLeave }) {
   const isReady = currentPlayer?.ready || false
   const playerWind = currentPlayer?.wind || null
 
+  // Sort players by name (case-insensitive)
+  const sortedPlayers = [...updatedRoom.players].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+  );
+
   return (
     <div className="lobby">
       <div className="room-info">
@@ -93,14 +98,19 @@ function Lobby({ room, playerName, onLeave }) {
 
       <div className="players-list">
         <h3>Players</h3>
-        <ul>
-          {updatedRoom.players.map((player) => (
-            <li key={player.id} className={player.ready ? 'ready' : ''}>
-              {player.name} - Score: {player.score} - Wind: {player.wind || 'None'}
-              {player.ready && <span className="badge">✓ Ready</span>}
-            </li>
+        <div className="player-cards">
+          {sortedPlayers.map((player) => (
+            <div className="player-card" key={player.id}>
+              <div className="player-card-content">
+                <div className="player-name">{player.name}</div>
+                <div className="player-wind">{player.wind || 'No Wind'}</div>
+                <div className="player-ready-indicator">
+                  {player.ready ? <span className="ready-indicator">🟢</span> : <span className="not-ready-indicator">🔴</span>}
+                </div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
       <div className="wind-selection">
@@ -134,12 +144,11 @@ function Lobby({ room, playerName, onLeave }) {
           ))}
         </div>
       </div>
-      <p>Current Round Wind: {updatedRoom.round_wind || 'None'}</p>
       {updatedRoom.round_wind === null && <p className="warning">Please select the Round wind before readying up.</p>}
 
       {/* Wind Selection */}
       <div className="wind-selection">
-        <h3>Select Your Wind</h3>
+        <label className="section-label">Select Your Wind</label>
         <div className="wind-options">
           {WINDS.map((wind) => (
             <button
@@ -169,18 +178,6 @@ function Lobby({ room, playerName, onLeave }) {
         </div>
       </div>
 
-      <div>
-        <h4>Wind Assignments:</h4>
-        <ul>
-          {WINDS.map(wind => (
-            <li key={wind}>
-              {wind}: {selectedWinds[wind] || 'Available'}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <p>Your selected wind: {playerWind || 'None'}</p>
       {!updatedRoom.round_wind && <p className="warning">Please select the Round Wind before selecting your player wind</p>}
       {playerWind === null && updatedRoom.round_wind && <p className="warning">Please select your wind before readying up.</p>}
 

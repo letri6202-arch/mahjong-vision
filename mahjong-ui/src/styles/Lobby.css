@@ -1,3 +1,114 @@
+@font-face {
+  font-family: 'Caveat';
+  src: url('/font/Caveat-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('/font/Caveat-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'DynaPuff';
+  src: url('/font/static/DynaPuff-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Player cards layout */
+.player-cards {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin: 20px 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  align-items: flex-start;
+}
+
+.player-card {
+  width: 160px;
+  aspect-ratio: 0.7/1;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url('/player_card.png') no-repeat center center;
+  background-size: contain;
+  font-family: 'Caveat', 'DynaPuff', 'Courier New', Courier, monospace !important;
+  box-sizing: border-box;
+}
+
+.player-card.empty {
+  background: #fff;
+  border: none;
+}
+
+.player-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  justify-content: center;
+  position: relative;
+}
+
+.player-name {
+  font-size: 1.2em;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  font-family: 'Caveat';
+  font-weight: bold;
+  max-width: 90%;
+  word-break: break-word;
+  text-align: center;
+}
+
+.player-score {
+  display: none;
+}
+
+.player-wind {
+  font-size: 1em;
+  font-weight: bold;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  text-align: center;
+  width: 100%;
+  display: block;
+  color: #222;
+}
+/* Ready indicator styling */
+.player-ready-indicator {
+  width: 100%;
+  text-align: center;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+.ready-indicator {
+  color: #16a34a;
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+.not-ready-indicator {
+  color: #dc2626;
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
 .lobby {
   max-width: 600px;
   margin: 2rem auto;
@@ -5,6 +116,7 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Caveat', sans-serif;
 }
 
 .room-info {
@@ -17,6 +129,8 @@
 .room-info h2 {
   color: #333;
   margin-bottom: 0.5rem;
+  font-family: 'Caveat', sans-serif;
+  font-weight: bold;
 }
 
 .room-info p {
@@ -94,11 +208,29 @@
   cursor: not-allowed;
 }
 
+.wind-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-label {
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  color: #333;
+}
+
 .wind-options {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.1em;
 }
 
 .wind-options label {
@@ -113,16 +245,18 @@
 }
 
 .wind-options label span,
-.wind-options button,
-.wind-options input[type="radio"] + span {
+.wind-options button {
   display: inline-block;
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.1em !important;
+  font-weight: 600;
   padding: 0.5rem 1.2rem;
+  min-width: 120px;
+  min-height: 44px;
   border-radius: 999px;
   border: 2px solid #d1d5db;
   background: #fff;
   color: #16a34a;
-  font-weight: 600;
-  font-size: 1rem;
   transition: all 0.2s;
   user-select: none;
 }
@@ -158,10 +292,21 @@
   font-weight: 600;
   margin: 0.5rem 0;
   font-size: 1rem;
+  font-family: sans-serif;
 }
 
 .warning::before {
-  content: '⚠️';
+  content: '‼️';
   font-size: 1.1rem;
   flex-shrink: 0;
+}
+.warning::after {
+  content: '‼️';
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.wind-assignments ul {
+  list-style: none;
+  padding-left: 0;
 }

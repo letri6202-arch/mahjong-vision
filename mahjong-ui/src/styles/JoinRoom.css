@@ -1,9 +1,39 @@
+@font-face {
+  font-family: 'DynaPuff';
+  src: url('/font/static/DynaPuff-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('/font/Caveat-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .join-room {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: none;
+  position: relative;
+  z-index: 1;
+  font-family: 'Caveat', sans-serif;
+}
+
+.join-room-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: url('/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(8px);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .form-container {

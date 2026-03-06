@@ -239,12 +239,10 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
 
   return (
     <div className="hand-submission-form">
-      <h3>Submit Winning Hand</h3>
-      
-      <hr></hr>
+      <h3 className="section-label">Submit Winning Hand</h3>
       <form onSubmit={handleSubmit}>
         <div className="form-section">
-          <label className="section-label">Select your Tiles (max 4 of each)</label>
+          <h3>Select your Tiles (max 4 of each)</h3>
           <div className="tiles-grid">
             {TILES.map(tile => {
               const count = tileCounts[tile] || 0
@@ -261,8 +259,9 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                       className="tile-minus"
                       onClick={() => handleTileDecrement(tile)}
                       disabled={count === 0}
+                      style={{ background: 'none', border: 'none', padding: 0 }}
                     >
-                      −
+                      <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
                     </button>
                     <button
                       type="button"
@@ -275,8 +274,9 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                         || (tile=='5p' &&  fiveCounts[tile[1]] === 4)
                         || (tile=='5s' &&  fiveCounts[tile[1]] === 4)
                       }
+                      style={{ background: 'none', border: 'none', padding: 0 }}
                     >
-                      +
+                      <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
                     </button>
                   </div>
                 </div>
@@ -307,13 +307,13 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           </div>
         </div>
 
-        <div className="5counts">
+        {/* <div className="5counts">
           <p> For debugging purposes</p>
           <p>5m count: {fiveCounts['m']}</p>
           <p>5p count: {fiveCounts['p']}</p>
           <p>5s count: {fiveCounts['s']}</p>
           <p>Player is dealer: {isDealer ? 'Yes' : 'No'}</p>
-        </div>
+        </div> */}
         <hr></hr>         
 
         <div className="form-section">
@@ -496,7 +496,6 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         <button type="submit" disabled={loading} className="submit-button">
           {loading ? 'Submitting...' : 'Submit Hand'}
         </button>
-        <p> Player Winds: {JSON.stringify(room.selected_winds)}</p>
         {error && <div className="error">{error}</div>}
       </form>
     </div>
