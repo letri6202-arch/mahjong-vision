@@ -8,205 +8,258 @@ from flask import jsonify
 
 class RoomManager:
     def __init__(self):
-        self.rooms = {}
+        pass
     
     def create_room(self, created_by):
         """Create a new room and add creator as first player"""
-        room = Room(created_by=created_by)
-        creator_player = Player(name=created_by)
-        room.players.append(creator_player)
-        self.rooms[room.id] = room
-        return room
+        from models import Room, Player
+        from database import SessionLocal
+        import uuid
+        from datetime import datetime
+        session = SessionLocal()
+        room_id = str(uuid.uuid4())[:8]
+        room = Room(
+            id=room_id,
+            created_at=datetime.utcnow(),
+            created_by=created_by,
+            max_players=4,
+            status='waiting',
+            current_round=0
+        )
+        session.add(room)
+        session.commit()
+        creator_player = Player(
+            id=str(uuid.uuid4())[:8],
+            name=created_by,
+            score=25000,
+            ready=False,
+            last_seen=datetime.utcnow(),
+            wind=None,
+            is_dealer=False,
+            room_id=room.id
+        )
+        session.add(creator_player)
+        session.commit()
+        session.refresh(room)
+        room_dict = room.to_dict()
+        session.close()
+        return room_dict
     
     def get_room(self, room_id):
-        """Get room by ID and clean up stale players"""
-        room = self.rooms.get(room_id)
+        """Get room by ID from the database"""
+        from models import Room
+        from database import SessionLocal
+        session = SessionLocal()
+        room = session.query(Room).filter_by(id=room_id).first()
         if room:
-            room.cleanup_stale_players()
-            room.update_status()
-        return room
+            session.refresh(room)
+            room_dict = room.to_dict()
+        else:
+            room_dict = None
+        session.close()
+        return room_dict
     
     def add_player_to_room(self, room_id, player_name):
-        """Add a player to a room"""
-        room = self.get_room(room_id)
+        """Add a player to a room using the database"""
+        from models import Player, Room
+        from database import SessionLocal
+        session = SessionLocal()
+        room = session.query(Room).filter_by(id=room_id).first()
         if not room:
+            session.close()
             return None, 'Room not found'
         if room.status == 'in-game':
+            session.close()
             return None, 'Game is in progress - cannot join'
         if len(room.players) >= room.max_players:
+            session.close()
             return None, 'Room is full'
-        
-        player = Player(name=player_name)
-        room.players.append(player)
-        return player, None
+        import uuid
+        from datetime import datetime
+        player = Player(
+            id=str(uuid.uuid4())[:8],
+            name=player_name,
+            score=25000,
+            ready=False,
+            last_seen=datetime.utcnow(),
+            wind=None,
+            is_dealer=False,
+            room_id=room.id
+        )
+        session.add(player)
+        session.commit()
+        session.refresh(player)
+        player_dict = player.to_dict()
+        session.close()
+        return player_dict, None
     
     def remove_player_from_room(self, room_id, player_id):
-        """Remove a player from a room"""
-        room = self.get_room(room_id)
-        if not room:
+        """Remove a player from a room using the database"""
+        from models import Player
+        from database import SessionLocal
+        session = SessionLocal()
+        player = session.query(Player).filter_by(id=player_id, room_id=room_id).first()
+        if not player:
+            session.close()
             return False
-        room.players = [p for p in room.players if p.id != player_id]
+        session.delete(player)
+        session.commit()
+        session.close()
         return True
     
     def toggle_player_ready(self, room_id, player_id):
-        """Toggle a player's ready status"""
-        room = self.get_room(room_id)
-        if not room:
+        """Toggle a player's ready status using the database and start game if all ready"""
+        from models import Player, Room
+        from database import SessionLocal
+        session = SessionLocal()
+        player = session.query(Player).filter_by(id=player_id, room_id=room_id).first()
+        if not player:
+            session.close()
             return False
-        
-        for player in room.players:
-            if player.id == player_id:
-                player.toggle_ready()
-                room.update_status()
-                return True
-        return False
+        player.ready = not player.ready
+        session.commit()
+        # Check if all players are ready
+        room = session.query(Room).filter_by(id=room_id).first()
+        players = session.query(Player).filter_by(room_id=room_id).all()
+        if all(p.ready for p in players) and len(players) > 0:
+            room.status = 'in-game'
+            session.commit()
+        session.close()
+        return True
     
     def submit_hand(self, room_id, winner_id, hand_data):
         """
-        Submit a winning hand and distribute points
-        hand_data: {
-            'tiles': [],
-            'win_type': 'self-draw' or 'discard',
-            'points': int,
-            'payments': {player_id: points_paid, ...}
-        }
+        Submit a winning hand and distribute points using the database
         """
+        from models import Player, Round, Room
+        from database import SessionLocal
+        from datetime import datetime
+        import uuid
         point_calculator = BasicCalculator()
-        room = self.get_room(room_id)
+        session = SessionLocal()
+        room = session.query(Room).filter_by(id=room_id).first()
         if not room:
+            session.close()
             return None, 'Room not found'
-        
-        # Find winner
-        winner = None
-        for player in room.players:
-            if player.id == winner_id:
-                winner = player
-                break
-        
+        winner = session.query(Player).filter_by(id=winner_id, room_id=room_id).first()
         if not winner:
+            session.close()
             return None, 'Player not found'
-        
-        # Create round record
-        round_obj = Round(room.current_round, winner_id, winner.name)
-        round_obj.tiles = hand_data.get('tiles', [])
-        round_obj.win_type = hand_data.get('win_type', '')
+        tiles = hand_data.get('tiles', [])
+        win_type = hand_data.get('win_type', '')
         winning_tile = hand_data.get('winningTile', None)
         config_data = hand_data.get('config', {})
-        result, error = point_calculator.calculate_hand(round_obj.tiles, winning_tile, config_data)  # Calculate points based on hand
+        result, error = point_calculator.calculate_hand(tiles, winning_tile, config_data)
         if error:
+            session.close()
             return None, error
-        
-        # Calculate points and distribute
         is_tsumo = config_data.get('is_tsumo', False)
         is_dealer = hand_data.get('is_dealer', False)
-
         points_gained = result.cost["total"]
-
+        players = session.query(Player).filter_by(room_id=room_id).all()
         if is_tsumo:
             if is_dealer:
-                for player in room.players:
+                for player in players:
                     if player.id != winner_id:
                         player.score -= result.cost["main"]
             else:
-                for player in room.players:
+                for player in players:
                     if player.id != winner_id:
                         if player.is_dealer:
                             player.score -= result.cost["main"]
                         else:
                             player.score -= result.cost["additional"]
         else:
-            # Ron - only the discarder pays
             discarderId = hand_data.get('discarderId')
-            for player in room.players:
+            for player in players:
                 if player.id == discarderId:
                     player.score -= result.cost["main"]
-
-        # Apply points to winner
-        winner = next(p for p in room.players if p.id == winner_id)
         winner.score += points_gained
-
-        print(f"Calculated points for hand: {points_gained}")
-        print(f"Yaku: {result.yaku}")
-        print("cost details:", result.cost.get("main",-1) + result.cost["additional"])
-        # Update scores
-        winner.score += points_gained  
-
-        # Record round
-        round_obj.points = points_gained
-        room.rounds.append(round_obj)
-        
-        # Move to next round
+        session.commit()
+        round_obj = Round(
+            id=str(uuid.uuid4())[:8],
+            round_number=room.current_round,
+            winner_id=winner_id,
+            winner_name=winner.name,
+            win_type=win_type,
+            points=points_gained,
+            timestamp=datetime.utcnow(),
+            room_id=room_id
+        )
+        session.add(round_obj)
         room.current_round += 1
-        
-        # Reset ready statuses for next round
-        for player in room.players:
+        for player in players:
             player.ready = False
-        
-        return room, None
+        session.commit()
+        session.refresh(room)
+        room_dict = room.to_dict()
+        session.close()
+        return room_dict, None
     
     def heartbeat(self, room_id, player_id):
-        """Update player's last_seen timestamp"""
-        room = self.get_room(room_id)
-        if not room:
+        """Update player's last_seen timestamp using the database"""
+        from models import Player
+        from database import SessionLocal
+        from datetime import datetime
+        session = SessionLocal()
+        player = session.query(Player).filter_by(id=player_id, room_id=room_id).first()
+        if not player:
+            session.close()
             return False
-        
-        for player in room.players:
-            if player.id == player_id:
-                player.ping()
-                return True
-        return False
+        player.last_seen = datetime.utcnow()
+        session.commit()
+        session.close()
+        return True
     
     def set_player_wind(self, room_id, player_id, wind, prevWind):
-        """Set a player's wind"""
-        room = self.get_room(room_id)
-        if not room:
+        """Set a player's wind using the database and update selected_winds"""
+        from models import Player, Room
+        from database import SessionLocal
+        import json
+        session = SessionLocal()
+        room = session.query(Room).filter_by(id=room_id).first()
+        player = session.query(Player).filter_by(id=player_id, room_id=room_id).first()
+        if not room or not player:
+            session.close()
             return False
-        player = None
-        for p in room.players:
-            if p.id == player_id:
-                player = p
-                break
-
-        if not player:
-            return False
-        print("room round wind:", room.round_wind)
-        #Determine if player is dealer as well
-        if wind == room.round_wind:
-            player.set_dealer_status(True)
-        else:
-            player.set_dealer_status(False)
-
-        print(f"Setting wind {wind} for player {player_id} with previous wind {prevWind}")
+        # Load selected_winds from JSON
+        winds = json.loads(room.selected_winds) if room.selected_winds else {w: None for w in ['E','S','W','N']}
         # Clear previous wind if different
         if prevWind and prevWind != wind:
-            room.selected_winds[prevWind] = None
-
+            winds[prevWind] = None
         # Clear wind if reselecting same wind
         if prevWind and prevWind == wind:
-            room.selected_winds[prevWind] = None
-            player.set_wind(None)
+            winds[prevWind] = None
+            player.wind = None
+            room.selected_winds = json.dumps(winds)
+            session.commit()
+            session.close()
             return True
-                
         # Assign new wind if not taken
-        if room.selected_winds.get(wind) == None:
-            room.selected_winds[wind] = player_id
+        if winds.get(wind) is None:
+            winds[wind] = player_id
         else:
+            session.close()
             return False  # Wind already taken
-
-        try:
-            player.set_wind(wind)
-        except Exception as e:
-            print(f"Error setting wind: {e}")
-            return False
-        
+        player.is_dealer = (wind == room.round_wind)
+        player.wind = wind
+        room.selected_winds = json.dumps(winds)
+        session.commit()
+        session.close()
         return True
     
     def set_round_wind(self, room_id, player_id, wind):
-        """Set the round wind for the room"""
-        room = self.get_room(room_id)
+        """Set the round wind for the room using the database"""
+        from models import Room
+        from database import SessionLocal
+        session = SessionLocal()
+        room = session.query(Room).filter_by(id=room_id).first()
         if not room:
+            session.close()
             return False
-        room.set_round_wind(wind)
+        room.round_wind = wind
+        session.commit()
+        session.close()
         return True
     
 room_manager = RoomManager()

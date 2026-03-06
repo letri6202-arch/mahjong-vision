@@ -53,7 +53,7 @@ function JoinRoom({ onRoomCreated, onRoomJoined }) {
   return (
     <div className="join-room">
       <div className="form-container">
-        <h2>Mahjong Vision</h2>
+        <h2>🌸Mahjong Soul IRL🌸</h2>
         
         <input
           type="text"
@@ -61,6 +61,7 @@ function JoinRoom({ onRoomCreated, onRoomJoined }) {
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           disabled={loading}
+          maxlength={8}
         />
 
         <button onClick={handleCreateRoom} disabled={loading}>

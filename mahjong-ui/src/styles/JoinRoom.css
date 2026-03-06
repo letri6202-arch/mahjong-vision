@@ -1,9 +1,39 @@
+@font-face {
+  font-family: 'DynaPuff';
+  src: url('/font/static/DynaPuff-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('/font/Caveat-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .join-room {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: none;
+  position: relative;
+  z-index: 1;
+  font-family: 'Caveat', sans-serif;
+}
+
+.join-room-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: url('/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(8px);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .form-container {
@@ -19,6 +49,9 @@
   text-align: center;
   color: #333;
   margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-family: 'Caveat', cursive;
 }
 
 .form-container input {
@@ -37,20 +70,30 @@
 }
 
 .form-container button {
-  width: 100%;
-  padding: 0.75rem;
+  width: 220px;
+  height: 70px;
+  padding: 0;
   margin-bottom: 1rem;
-  background: #667eea;
-  color: white;
+  background-image: url('/button.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  color: black;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: filter 0.2s;
+  box-shadow: none;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.form-container button:hover:not(:disabled) {
-  background: #5568d3;
+.form-container button:hover:not(:disabled),
+.form-container button:active:not(:disabled) {
+  filter: grayscale(30%) brightness(90%);
 }
 
 .form-container button:disabled {
@@ -59,6 +102,13 @@
 }
 
 .form-container p {
+  color: #7a4c15;
+  margin-bottom: 2rem;
+  font-size: 2.7rem;
+  font-weight: 900;
+  font-family: 'Caveat', cursive;
+  text-shadow: 2px 2px 8px #e0c08a, 0 0 2px #000;
+  letter-spacing: 2px;
   text-align: center;
   color: #999;
   margin: 1rem 0;

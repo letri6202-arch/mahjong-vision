@@ -1,3 +1,11 @@
+/* Center the submit button horizontally */
+.submit-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 24px 0;
+}
 .tiles-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -11,14 +19,20 @@
   flex-direction: column;
   gap: 0;
   background: white;
-  border: 2px solid #ddd;
-  border-radius: 4px;
-  padding: 0;
-  overflow: hidden;
-  transition: border-color 0.2s;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-left: 8px;
 }
 
-.tile-counter:hover {
+.tile-buttons {
+  border: none !important;
+  box-shadow: none !important;
   border-color: #667eea;
 }
 
@@ -122,6 +136,48 @@
   cursor: not-allowed;
 }
 
+.tile-minus:disabled img,
+.tile-plus:disabled img {
+  filter: brightness(0.5);
+}
+
+.tile-minus:active img,
+.tile-plus:active img {
+  filter: brightness(0.75);
+}
+
+.submit-button {
+  background-image: url('/button.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  color: rgb(0, 0, 0);
+  border: none;
+  width: 220px;
+  height: 70px;
+  font-family: 'Caveat', cursive;
+  font-size: 1.7rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0;      /* Remove rounded corners */
+  box-shadow: none;      /* Remove shadow */
+  background-color: transparent; /* Ensure no background color */
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.submit-button:active {
+  cursor: pointer;
+  filter: grayscale(50%);
+}
 .winning-tile-selected {
   border: 2px solid gold;
   border-radius: 4px;
@@ -280,18 +336,32 @@
   background-color: #dcfce7;
 }
 
-.submit-button{
-  padding: 0.75rem 1.5rem;
-  background: #2fe2a6;
-  color: black;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin: 16px;
+.hand-submission-form {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Caveat', cursive !important;
 }
-.submit-button:hover {
-  background: #5568d3;
-  color: white;
+
+.section-label {
+  font-family: 'Caveat', sans-serif;
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  color: #333;
+}
+
+.selected-tiles-label {
+  font-family: 'Caveat', cursive;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 0.5em;
+  letter-spacing: 0.03em;
+  text-align: center;
+  display: block;
 }
