@@ -53,7 +53,7 @@ function JoinRoom({ onRoomCreated, onRoomJoined }) {
   return (
     <div className="join-room">
       <div className="form-container">
-        <h2>Mahjong Vision</h2>
+        <h2>🌸Mahjong Soul IRL🌸</h2>
         
         <input
           type="text"

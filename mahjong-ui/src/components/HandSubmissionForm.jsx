@@ -336,7 +336,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               )
             })}
           </div>
-          <label>Winning Tile</label>
+          <p className="section-label">Winning Tile</p>
 
           {
             !winningTile && ( <p className="no-winning-tile">No winning tile selected</p>)
@@ -493,9 +493,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="submit-button">
-          {loading ? 'Submitting...' : 'Submit Hand'}
-        </button>
+        <div className="submit-button-container">
+          <button type="submit" disabled={loading} className="submit-button">
+            {loading ? 'Submitting...' : 'Submit Hand'}
+          </button>
+        </div>
         {error && <div className="error">{error}</div>}
       </form>
     </div>

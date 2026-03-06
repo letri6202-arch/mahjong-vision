@@ -144,7 +144,7 @@ function Lobby({ room, playerName, onLeave }) {
           ))}
         </div>
       </div>
-      {updatedRoom.round_wind === null && <p className="warning">Please select the Round wind before readying up.</p>}
+      {updatedRoom.round_wind === null && <p className="warning">Please select the Round wind before readying up</p>}
 
       {/* Wind Selection */}
       <div className="wind-selection">

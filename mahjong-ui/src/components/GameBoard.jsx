@@ -98,7 +98,7 @@ function GameBoard({ room, playerName, onLeave }) {
       )}
 
       <div className="game-actions">
-        <button onClick={handleLeaveGame} disabled={loading}>
+        <button className="leave-game-button" onClick={handleLeaveGame} disabled={loading}>
           Leave Game
         </button>
       </div>

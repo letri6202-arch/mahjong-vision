@@ -184,27 +184,36 @@
 }
 
 .lobby-actions button {
-  padding: 0.75rem 1.5rem;
-  background: #667eea;
-  color: white;
+  padding: 0;
+  background-image: url('/button.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  color: black;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 1.8rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: background 0.3s;
-  flex: 1;
+  transition: filter 0.2s;
+  width: 220px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lobby-actions button.ready {
-  background: #4caf50;
+  /* No override, keep button image */
 }
 
 .lobby-actions button:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: grayscale(30%) brightness(90%);
 }
 
 .lobby-actions button:disabled {
-  background: #ccc;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -292,7 +301,7 @@
   font-weight: 600;
   margin: 0.5rem 0;
   font-size: 1rem;
-  font-family: sans-serif;
+  font-family: "Caveat", cursive;
 }
 
 .warning::before {
