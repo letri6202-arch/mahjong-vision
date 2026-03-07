@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Tooltip } from 'react-tooltip'
 import client from '../api/client'
 import '../styles/HandSubmissionForm.css'
 
@@ -221,10 +222,29 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         }
       })
       onHandSubmitted()
-      // Reset form
+      // Reset all form fields
       setTileCounts({})
       setPoints('')
       setPayments({})
+      setWinningTile(null)
+      setWinType('discard')
+      setPlayerWind('E')
+      setRoundWind('E')
+      setIsTsumo(false)
+      setIsRiichi(false)
+      setIsIppatsu(false)
+      setIsRinshan(false)
+      setIsChankan(false)
+      setIsHaitei(false)
+      setIsHoutei(false)
+      setIsDaburuRiichi(false)
+      setIsNagashiMangan(false)
+      setIsTenhou(false)
+      setIsRenhou(false)
+      setIsChiihou(false)
+      setIsDealer(sessionPlayer.wind == room.roundWind)
+      setDiscardingPlayer(null)
+      setDoraIndicators([])
     } catch (err) {
       const message = err.response?.data?.error || err.message || 'Failed to submit hand'
       setError(message)
@@ -237,54 +257,118 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
     setWinningTile(prev => prev === tile ? null : tile)
   }
 
+  // Group tiles by suit
+  const manTiles = ['1m','2m','3m','4m','5m','5mr','6m','7m','8m','9m']
+  const pinTiles = ['1p','2p','3p','4p','5p','5pr','6p','7p','8p','9p']
+  const souTiles = ['1s','2s','3s','4s','5s','5sr','6s','7s','8s','9s']
+  const honorTiles = ['E','S','W','N','C','D','B']
+
   return (
     <div className="hand-submission-form">
       <h3 className="section-label">Submit Winning Hand</h3>
       <form onSubmit={handleSubmit}>
         <div className="form-section">
-          <h3>Select your Tiles (max 4 of each)</h3>
-          <div className="tiles-grid">
-            {TILES.map(tile => {
-              const count = tileCounts[tile] || 0
-              const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
-              return (
-                <div className="tile-counter">
-                  <div className="tile-display">
-                    <img src={imagePath} alt={tile} className="tile-image" />
-                    <span className="tile-count">{count}</span>
+          <p className='subsection-label'>Select your Tiles (max 4 of each)</p>
+          <div className="tile-row-container">
+            <div className="tile-row"><span className="tile-row-label">Man</span>
+              {manTiles.map(tile => {
+                const count = tileCounts[tile] || 0
+                const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                return (
+                  <div className="tile-counter" key={tile}>
+                    <div className="tile-display">
+                      <img src={imagePath} alt={tile} className="tile-image" />
+                      <span className="tile-count">{count}</span>
+                    </div>
+                    <div className="tile-buttons">
+                      <button type="button" className="tile-minus" onClick={() => handleTileDecrement(tile)} disabled={count === 0} style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
+                      </button>
+                      <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
+                        disabled={count === 4 || (['5mr'].includes(tile) && count === 1) || (['5mr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5m' && fiveCounts[tile[1]] === 4)}
+                        style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="tile-buttons">
-                    <button
-                      type="button"
-                      className="tile-minus"
-                      onClick={() => handleTileDecrement(tile)}
-                      disabled={count === 0}
-                      style={{ background: 'none', border: 'none', padding: 0 }}
-                    >
-                      <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
-                    </button>
-                    <button
-                      type="button"
-                      className="tile-plus"
-                      onClick={() => handleTileIncrement(tile)}
-                      disabled={count === 4 
-                        || (['5mr', '5pr', '5sr'].includes(tile) && count === 1)
-                        || (['5mr', '5pr', '5sr'].includes(tile) &&  fiveCounts[tile[1]] === 4)
-                        || (tile=='5m' &&  fiveCounts[tile[1]] === 4)
-                        || (tile=='5p' &&  fiveCounts[tile[1]] === 4)
-                        || (tile=='5s' &&  fiveCounts[tile[1]] === 4)
-                      }
-                      style={{ background: 'none', border: 'none', padding: 0 }}
-                    >
-                      <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
-                    </button>
+                )
+              })}
+            </div>
+            <div className="tile-row"><span className="tile-row-label">Pin</span>
+              {pinTiles.map(tile => {
+                const count = tileCounts[tile] || 0
+                const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                return (
+                  <div className="tile-counter" key={tile}>
+                    <div className="tile-display">
+                      <img src={imagePath} alt={tile} className="tile-image" />
+                      <span className="tile-count">{count}</span>
+                    </div>
+                    <div className="tile-buttons">
+                      <button type="button" className="tile-minus" onClick={() => handleTileDecrement(tile)} disabled={count === 0} style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
+                      </button>
+                      <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
+                        disabled={count === 4 || (['5pr'].includes(tile) && count === 1) || (['5pr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5p' && fiveCounts[tile[1]] === 4)}
+                        style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+            <div className="tile-row"><span className="tile-row-label">Sou</span>
+              {souTiles.map(tile => {
+                const count = tileCounts[tile] || 0
+                const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                return (
+                  <div className="tile-counter" key={tile}>
+                    <div className="tile-display">
+                      <img src={imagePath} alt={tile} className="tile-image" />
+                      <span className="tile-count">{count}</span>
+                    </div>
+                    <div className="tile-buttons">
+                      <button type="button" className="tile-minus" onClick={() => handleTileDecrement(tile)} disabled={count === 0} style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
+                      </button>
+                      <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
+                        disabled={count === 4 || (['5sr'].includes(tile) && count === 1) || (['5sr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5s' && fiveCounts[tile[1]] === 4)}
+                        style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="tile-row"><span className="tile-row-label">Honors</span>
+              {honorTiles.map(tile => {
+                const count = tileCounts[tile] || 0
+                const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                return (
+                  <div className="tile-counter" key={tile}>
+                    <div className="tile-display">
+                      <img src={imagePath} alt={tile} className="tile-image" />
+                      <span className="tile-count">{count}</span>
+                    </div>
+                    <div className="tile-buttons">
+                      <button type="button" className="tile-minus" onClick={() => handleTileDecrement(tile)} disabled={count === 0} style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
+                      </button>
+                      <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
+                        disabled={count === 4}
+                        style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
           <div className="tile-summary">
-            <label className ="selected-tiles-label">Selected Tiles</label>
+            <label className ="subsection-label">Selected Tiles</label>
             {
               getSelectedTiles().length <= 0 && ( <p className="no-tiles">No tiles selected</p>)
             }
@@ -315,13 +399,14 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           <p>Player is dealer: {isDealer ? 'Yes' : 'No'}</p>
         </div> */}
         <hr></hr>         
-
+        
         <div className="form-section">
-          <p className="section-label">Select the winning tile (click to select/deselect)</p>
-          <div className="tiles-grid">
-            {TILES.map(tile => {
-              const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
-              const isSelected = winningTile === tile
+          <p className="section-label">Select the winning tile</p>
+          {getSelectedTiles().length > 0 && 
+          <div className="tiles-row">
+            {[...new Set(getSelectedTiles())].map((tile, index) => {
+              const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+              const isSelected = winningTile === tile;
               return (
                 <div
                   key={tile}
@@ -329,14 +414,13 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                   onClick={() => handleWinningTile(tile)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="tile-display">
-                    <img src={imagePath} alt={tile} className="tile-image" />
-                  </div>
+                  <img src={imagePath} alt={tile} className="tile-image" />
                 </div>
-              )
+              );
             })}
           </div>
-          <p className="section-label">Winning Tile</p>
+          }
+          <p className="subsection-label">Winning Tile </p>
 
           {
             !winningTile && ( <p className="no-winning-tile">No winning tile selected</p>)
@@ -357,33 +441,41 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         <div className="form-section">
           <label className='section-label'>Win Type</label>
           <div className="additional-info">
-            <label>
-              <input 
-                type="checkbox"
-                checked={isTsumo}
-                onChange={(e) => setIsTsumo(e.target.checked)}
-              />
-              <span>Tsumo (Self-Draw)</span>
-            </label>
-            </div>
+          <label>
+            <input 
+              type="checkbox"
+              checked={isTsumo}
+              onChange={(e) => {
+                setIsTsumo(e.target.checked)
+                setDiscardingPlayer(null)
+              }}
+              data-tooltip-id="tsumo-tip"
+              data-tooltip-content="Tsumo: Win by self-draw. You draw the winning tile yourself."
+            />
+            <span data-tooltip-id="tsumo-tip" data-tooltip-content="Tsumo: Win by self-draw. You draw the winning tile yourself.">Tsumo (Self-Draw)</span>
+            <Tooltip id="tsumo-tip" place="top" />
+          </label>
+       </div>
 
-            <div className="discarding-player-select">
-              <label className="section-label">Player Who Discarded</label>
-                <div className="wind-options">
-                  {losers.map(player => (
-                      <label key={player.id}>
-                        <input
-                          type="radio"
-                          name="discarding-player"
-                          value={player.id}
-                          checked={discardingPlayer === player.id}
-                          onChange={(e) => setDiscardingPlayer(e.target.value)}
-                        />
-                        <span>{player.name}</span>
-                    </label>
-                  ))}
-                </div>
-            </div>  
+      {!isTsumo && (
+        <div className="discarding-player-select">
+        <label className="section-label">Player Who Discarded</label>
+        <div className="wind-options">
+          {losers.map(player => (
+            <label key={player.id}>
+            <input
+              type="radio"
+              name="discarding-player"
+              value={player.id}
+              checked={discardingPlayer === player.id}
+              onChange={(e) => setDiscardingPlayer(e.target.value)}
+            />
+            <span>{player.name}</span>
+            </label>
+          ))}
+        </div>
+        </div>
+      )}
               
 
           <label className="section-label">Basic Options</label>
@@ -393,8 +485,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isRiichi}
                 onChange={(e) => setIsRiichi(e.target.checked)}
+                data-tooltip-id="riichi-tip"
+                data-tooltip-content="Declare ready hand, waiting for one tile to win."
               />
-              <span>Riichi</span>
+              <span data-tooltip-id="riichi-tip" data-tooltip-content="Declare ready hand, waiting for one tile to win.">Riichi</span>
+              <Tooltip id="riichi-tip" place="top" />
             </label>
 
             <label>
@@ -402,10 +497,12 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isIppatsu}
                 onChange={(e) => setIsIppatsu(e.target.checked)}
+                data-tooltip-id="ippatsu-tip"
+                data-tooltip-content="Win within one turn after declaring Riichi."
               />
-              <span>Ippatsu</span>
+              <span data-tooltip-id="ippatsu-tip" data-tooltip-content="Win within one turn after declaring Riichi.">Ippatsu</span>
+              <Tooltip id="ippatsu-tip" place="top" />
             </label>
-
           </div>
 
           <label className="section-label">Advanced Options</label>
@@ -415,8 +512,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isRinshan}
                 onChange={(e) => setIsRinshan(e.target.checked)}
+                data-tooltip-id="rinshan-tip"
+                data-tooltip-content="Win by drawing a tile after a Kan (quad)."
               />
-              <span>Rinshan</span>
+              <span data-tooltip-id="rinshan-tip" data-tooltip-content="Win by drawing a tile after a Kan (quad).">Rinshan</span>
+              <Tooltip id="rinshan-tip" place="top" />
             </label>
 
             <label>
@@ -424,8 +524,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isChankan}
                 onChange={(e) => setIsChankan(e.target.checked)}
+                data-tooltip-id="chankan-tip"
+                data-tooltip-content="Win by robbing a Kan (quad)."
               />
-              <span>Chankan</span>
+              <span data-tooltip-id="chankan-tip" data-tooltip-content="Win by robbing a Kan (quad).">Chankan</span>
+              <Tooltip id="chankan-tip" place="top" />
             </label>
 
             <label>
@@ -433,8 +536,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isHaitei}
                 onChange={(e) => setIsHaitei(e.target.checked)}
+                data-tooltip-id="haitei-tip"
+                data-tooltip-content="Win with the last tile drawn from the wall."
               />
-              <span>Haitei</span>
+              <span data-tooltip-id="haitei-tip" data-tooltip-content="Win with the last tile drawn from the wall.">Haitei</span>
+              <Tooltip id="haitei-tip" place="top" />
             </label>
 
             <label>
@@ -442,8 +548,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isHoutei}
                 onChange={(e) => setIsHoutei(e.target.checked)}
+                data-tooltip-id="houtei-tip"
+                data-tooltip-content="Win with the last discard."
               />
-              <span>Houtei</span>
+              <span data-tooltip-id="houtei-tip" data-tooltip-content="Win with the last discard.">Houtei</span>
+              <Tooltip id="houtei-tip" place="top" />
             </label>
 
             <label>
@@ -451,8 +560,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isDaburuRiichi}
                 onChange={(e) => setIsDaburuRiichi(e.target.checked)}
+                data-tooltip-id="dabururiichi-tip"
+                data-tooltip-content="Double Riichi: declare Riichi on your first turn."
               />
-              <span>Daburu Riichi</span>
+              <span data-tooltip-id="dabururiichi-tip" data-tooltip-content="Double Riichi: declare Riichi on your first turn.">Daburu Riichi</span>
+              <Tooltip id="dabururiichi-tip" place="top" />
             </label>
 
             <label>
@@ -460,8 +572,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isNagashiMangan}
                 onChange={(e) => setIsNagashiMangan(e.target.checked)}
+                data-tooltip-id="nagashi-tip"
+                data-tooltip-content="Win by only discarding terminals and honors."
               />
-              <span>Nagashi Mangan</span>
+              <span data-tooltip-id="nagashi-tip" data-tooltip-content="Win by only discarding terminals and honors.">Nagashi Mangan</span>
+              <Tooltip id="nagashi-tip" place="top" />
             </label>
 
             <label>
@@ -469,8 +584,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isTenhou}
                 onChange={(e) => setIsTenhou(e.target.checked)}
+                data-tooltip-id="tenhou-tip"
+                data-tooltip-content="Dealer wins on the first turn."
               />
-              <span>Tenhou</span>
+              <span data-tooltip-id="tenhou-tip" data-tooltip-content="Dealer wins on the first turn.">Tenhou</span>
+              <Tooltip id="tenhou-tip" place="top" />
             </label>
 
             <label>
@@ -478,8 +596,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isRenhou}
                 onChange={(e) => setIsRenhou(e.target.checked)}
+                data-tooltip-id="renhou-tip"
+                data-tooltip-content="Non-dealer wins on the first turn."
               />
-              <span>Renhou</span>
+              <span data-tooltip-id="renhou-tip" data-tooltip-content="Non-dealer wins on the first turn.">Renhou</span>
+              <Tooltip id="renhou-tip" place="top" />
             </label>
 
             <label>
@@ -487,8 +608,11 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                 type="checkbox"
                 checked={isChiihou}
                 onChange={(e) => setIsChiihou(e.target.checked)}
+                data-tooltip-id="chiihou-tip"
+                data-tooltip-content="Non-dealer self-draw win on the first turn."
               />
-              <span>Chiihou</span>
+              <span data-tooltip-id="chiihou-tip" data-tooltip-content="Non-dealer self-draw win on the first turn.">Chiihou</span>
+              <Tooltip id="chiihou-tip" place="top" />
             </label>
           </div>
         </div>

@@ -131,7 +131,9 @@ class BasicCalculator:
         print(f"Is riichi: {hand_config.is_riichi}")
         print(f"Result error: {result.error}")
         print(f"Calculated hand value: {result.han}")
-        
+        print(f"Calculated yaku: {result.yaku}")
+        print(f"Main = {result.cost['main']}")
+        print(f"Additional = {result.cost['additional']}")
         print("********************************")
         if result.error:
             print(f"Error calculating hand: {result.error}")
