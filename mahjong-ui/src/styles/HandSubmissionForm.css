@@ -1,3 +1,34 @@
+/* ─── Winning hand info ──────────────────────────────────────────────────── */
+.winning-hand-info ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5rem 0;
+}
+.winning-hand-info li {
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+/* ─── Selected tiles row ──────────────────────────────────────────────────── */
+.tile-summary-selected {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 0.5rem 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fafafa;
+  scrollbar-width: thin;
+  scrollbar-color: #bbb #fafafa;
+}
+
+.tile-summary-selected::-webkit-scrollbar {
+  height: 8px;
+  background: #fafafa;
+  border-radius: 8px;
+}
 /* ─── Scrollable tile rows ─────────────────────────────────────────────────── */
 .tiles-row,
 .tile-row {
@@ -297,7 +328,6 @@
   text-align: center;
   color: #333;
   margin: 16px 0 8px;
-  text-decoration: underline;
 }
 
 .hand-submission-form .subsection-label {

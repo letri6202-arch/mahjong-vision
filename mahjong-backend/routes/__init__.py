@@ -62,10 +62,11 @@ def submit_hand(room_id):
     data = request.get_json()
     winner_id = data.get('winner_id')
     hand_data = data.get('hand_data', {})
-    room, error = room_manager.submit_hand(room_id, winner_id, hand_data)
+    room_result, error = room_manager.submit_hand(room_id, winner_id, hand_data)
     if error:
         return jsonify({'error': error}), 400
-    return jsonify(room), 200
+    # room_result contains both room and winning_hand_info
+    return jsonify(room_result), 200
 
 @rooms_bp.route('/<room_id>/players/<player_id>/heartbeat', methods=['POST'])
 def player_heartbeat(room_id, player_id):

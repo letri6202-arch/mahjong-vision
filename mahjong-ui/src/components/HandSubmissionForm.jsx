@@ -35,6 +35,53 @@ const fiveCounts = {
 }
 
 function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
+      // Yaku descriptions for tooltips (from Yaku.md)
+      const yakuDescriptions = {
+        'Riichi': 'Declare riichi when tenpai with a closed hand, discarding face-down. Closed only.',
+        'DaburuRiichi': 'Riichi declared on your very first discard of the game. Closed only.',
+        'OpenRiichi': 'Riichi variant where you reveal your hand. Rare/optional rule. Closed only.',
+        'DaburuOpenRiichi': 'Open riichi declared on the first turn. Reveals hand. Closed only.',
+        'Ippatsu': 'Win within one full round of turns after declaring riichi, before any calls interrupt.',
+        'Tsumo': 'Win by self-draw with a closed hand. Closed only.',
+        'Pinfu': 'Four sequences, a non-yakuhai pair, and a two-sided (ryanmen) wait. Closed only.',
+        'Tanyao': 'All tiles are simples (2–8); no terminals or honors.',
+        'Iipeiko': 'Two identical sequences in a closed hand. Closed only.',
+        'Ryanpeikou': 'Two pairs of identical sequences (double iipeiko). Closed only.',
+        'Chiitoitsu': 'Seven different pairs. Fixed fu of 25. Closed only.',
+        'Toitoi': 'All four melds are triplets; no sequences.',
+        'San Ankou': 'Three concealed triplets. The fourth meld may be open. Closed only.',
+        'Sanshoku': 'Three sequences of the same number across all three suits.',
+        'SanshokuDoukou': 'Three triplets of the same number across all three suits.',
+        'Ittsu': 'A 1–2–3, 4–5–6, and 7–8–9 sequence all in the same suit.',
+        'Honitsu': 'Hand uses only one suit plus honor tiles.',
+        'Chinitsu': 'Hand uses only one suit; no honors.',
+        'Honroto': 'All tiles are terminals (1s/9s) or honors, all melds are triplets/pairs. Stacks with Toitoi/Chiitoitsu.',
+        'Junchan': 'Every meld and the pair contain a terminal (1 or 9).',
+        'Chantai': 'Every meld and the pair contain a terminal or honor.',
+        'Shosangen': 'Two triplets of dragon tiles plus a pair of the third dragon.',
+        'SanKantsu': 'Three kans declared in the hand.',
+        'Haku': 'Triplet of white dragons (中).',
+        'Hatsu': 'Triplet of green dragons (發).',
+        'Chun': 'Triplet of red dragons (中).',
+        'SeatWindEast': 'Triplet of your seat wind — East.',
+        'SeatWindSouth': 'Triplet of your seat wind — South.',
+        'SeatWindWest': 'Triplet of your seat wind — West.',
+        'SeatWindNorth': 'Triplet of your seat wind — North.',
+        'RoundWindEast': 'Triplet of the current round wind — East.',
+        'RoundWindSouth': 'Triplet of the current round wind — South.',
+        'RoundWindWest': 'Triplet of the current round wind — West.',
+        'RoundWindNorth': 'Triplet of the current round wind — North.',
+        'Haitei': 'Win by tsumo on the very last drawable tile.',
+        'Houtei': 'Win by ron on the discard after the last drawable tile.',
+        'Rinshan': 'Win by tsumo on the supplemental tile drawn after declaring a kan.',
+        'Chankan': 'Win by robbing a kan — stealing the tile someone adds to an open triplet to complete a kan.',
+        'NagashiMangan': 'All of your discards were terminals or honors, and none were called. Scored as mangan at round end.',
+        'Renhou': 'Win by ron before your first draw (within the first round of turns). *Scored as mangan or yakuman depending on ruleset.',
+        'Menzen Tsumo': 'Win by self-draw with a closed hand. Closed only.'
+        // Add more yaku descriptions as needed
+      };
+    // Winning hand info state
+    const [winningHandInfo, setWinningHandInfo] = useState(null)
   //Game State Information
   const [winType, setWinType] = useState('discard')
   const [points, setPoints] = useState('')
@@ -195,7 +242,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
     setLoading(true)
     setError('')
     try {
-      await client.post(`/rooms/${room.id}/hands`, {
+      const response = await client.post(`/rooms/${room.id}/hands`, {
         winner_id: playerId,
         hand_data: {
           tiles: getSelectedTiles(),
@@ -221,6 +268,12 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           discarderId: discardingPlayer
         }
       })
+      // Extract winning hand info from response
+      if (response.data && response.data.winning_hand_info) {
+        setWinningHandInfo(response.data.winning_hand_info)
+      } else {
+        setWinningHandInfo(null)
+      }
       onHandSubmitted()
       // Reset all form fields
       setTileCounts({})
@@ -265,6 +318,37 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
 
   return (
     <div className="hand-submission-form">
+      <hr></hr>
+      {winningHandInfo && (
+        <div className="winning-hand-info">
+          <p className='section-label'>Winning Hand Information</p> 
+          <ul>
+            <li><strong>Han:</strong> {winningHandInfo.han}</li>
+            {winningHandInfo.fu !== null && <li><strong>Fu:</strong> {winningHandInfo.fu}</li>}
+            <li><strong>Points:</strong> {winningHandInfo.points}</li>
+            <li><strong>Main Payment:</strong> {winningHandInfo.main}</li>
+            <li><strong>Additional Payment:</strong> {winningHandInfo.additional}</li>
+            <li><strong>Yaku:</strong> {
+              winningHandInfo.yaku && winningHandInfo.yaku.length > 0 ? (
+                <span>
+                  {winningHandInfo.yaku.map((yaku, idx) => (
+                    <span key={yaku} style={{marginRight: '8px'}}>
+                      <span
+                        data-tooltip-id={`yaku-tip-${idx}`}
+                        data-tooltip-content={yakuDescriptions[yaku] || 'No description available'}
+                        style={{textDecoration: 'underline', cursor: 'pointer'}}
+                      >{yaku}</span>
+                      <Tooltip id={`yaku-tip-${idx}`} place="top" />
+                    </span>
+                  ))}
+                </span>
+              ) : 'None'
+            }</li>
+            {winningHandInfo.error && <li style={{color:'red'}}><strong>Error:</strong> {winningHandInfo.error}</li>}
+          </ul>
+        </div>
+      )}
+      <hr></hr>
       <h3 className="section-label">Submit Winning Hand</h3>
       <form onSubmit={handleSubmit}>
         <div className="form-section">
@@ -367,6 +451,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               })}
             </div>
           </div>
+          <br></br>
           <div className="tile-summary">
             <label className ="subsection-label">Selected Tiles</label>
             {
@@ -399,7 +484,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           <p>Player is dealer: {isDealer ? 'Yes' : 'No'}</p>
         </div> */}
         <hr></hr>         
-        
+      
         <div className="form-section">
           <p className="section-label">Select the winning tile</p>
           {getSelectedTiles().length > 0 && 
@@ -437,7 +522,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
             </div>
           )}
         </div>
-
+        <hr></hr>
         <div className="form-section">
           <label className='section-label'>Win Type</label>
           <div className="additional-info">

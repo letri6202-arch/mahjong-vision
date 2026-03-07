@@ -153,6 +153,17 @@ class RoomManager:
         if error:
             session.close()
             return None, error
+
+        # Prepare winning hand info to return
+        winning_hand_info = {
+            "han": result.han,
+            "fu": getattr(result, "fu", None),
+            "yaku": [y.name for y in getattr(result, "yaku", [])],
+            "points": result.cost["total"],
+            "main": result.cost["main"],
+            "additional": result.cost.get("additional", 0),
+            "error": getattr(result, "error", None)
+        }
         is_tsumo = config_data.get('is_tsumo', False)
         is_dealer = hand_data.get('is_dealer', False)
         points_gained = result.cost["total"]
@@ -194,7 +205,8 @@ class RoomManager:
         session.refresh(room)
         room_dict = room.to_dict()
         session.close()
-        return room_dict, None
+        # Return both room_dict and winning_hand_info
+        return {"room": room_dict, "winning_hand_info": winning_hand_info}, None
     
     def heartbeat(self, room_id, player_id):
         """Update player's last_seen timestamp using the database"""
