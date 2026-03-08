@@ -8,6 +8,16 @@ from mahjong.tile import TilesConverter
 import json
 from flask import jsonify
 
+honorMap = {
+    'E': '1',
+    'S': '2',
+    'W': '3',
+    'N': '4',
+    'B': '5',
+    'D': '6',
+    'C': '7'
+}
+
 class RoomManager:
     def __init__(self):
         pass
@@ -131,6 +141,11 @@ class RoomManager:
     
     def create_meld_tiles(self, tiles):
         tiles_converter = TilesConverter()
+        if len(tiles[0]) < 2:
+            meld_tiles_str = ''.join(honorMap[tile[0]] for tile in tiles)
+            meld_tiles = tiles_converter.string_to_136_array(honors=meld_tiles_str)
+            return meld_tiles
+        
         suit = tiles[0][1] if tiles else None
         meld_tiles_str = ''.join(tile[0] for tile in tiles) 
 
