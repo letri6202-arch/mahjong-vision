@@ -16,7 +16,8 @@
     - Add a CLEAR option for selecting tiles
 
 ### Known bugs:
-- Menzen tsumo somehow always awarded?
-- Potentially need to implement open vs closed, unsure based off Riichi closed hand requirements.
 - Not sure if this is intended, and if it should be kept: it will always choose the hand that gives you the most points.
     -i.e. 123123123 
+
+### Weird Edge Cases:
+- Selecting a win tile that is also a part of an open hand cannot happen. The winning tile must complete something that is part of your *closed* hand, so it logically cannot be part of any open meld.

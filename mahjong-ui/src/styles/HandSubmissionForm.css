@@ -1,3 +1,82 @@
+/* ─── Meld Container ─────────────────────────────────────────────────────── */
+.meld-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+.meld-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+
+.meld-row label {
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+  color: #667eea;
+  margin-bottom: 0.3rem;
+}
+
+.meld-row .tiles-row {
+  justify-content: center;
+}
+
+.meld-row button,
+.meld-container button {
+  padding: 0.5rem 1.2rem;
+  background: #fd81b5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  font-family: 'Caveat', cursive;
+  cursor: pointer;
+  margin: 0.3rem 0.5rem;
+  transition: background 0.2s;
+}
+
+.meld-row button:hover,
+.meld-container button:hover {
+  background: #f76c6c;
+}
+
+.meld-row button:disabled,
+.meld-container button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.meld-tiles-row {
+  justify-content: center;
+}
+/* ─── Clear Tiles Button ─────────────────────────────────────────────── */
+.clear-tiles-button {
+  padding: 0.75rem 1.5rem;
+  background: #e73535;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.5rem;
+  font-family: 'Caveat', cursive;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.clear-tiles-button:hover:not(:disabled) {
+  background: #f76c6c !important;
+}
+
+.clear-tiles-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
 /* ─── Winning hand info ──────────────────────────────────────────────────── */
 .winning-hand-info ul {
   list-style: none;

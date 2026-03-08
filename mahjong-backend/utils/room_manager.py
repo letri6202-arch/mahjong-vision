@@ -2,6 +2,8 @@ from unittest import result
 
 from models import Room, Player, Round
 from test_mahjong import BasicCalculator # Importing to ensure hand calculation logic is available
+from mahjong.meld import Meld
+from mahjong.tile import TilesConverter
 
 import json
 from flask import jsonify
@@ -127,6 +129,21 @@ class RoomManager:
         session.close()
         return True
     
+    def create_meld_tiles(self, tiles):
+        tiles_converter = TilesConverter()
+        suit = tiles[0][1] if tiles else None
+        meld_tiles_str = ''.join(tile[0] for tile in tiles) 
+
+        if suit == 'm':
+            meld_tiles = tiles_converter.string_to_136_array(man=meld_tiles_str)
+        elif suit == 'p':
+            meld_tiles = tiles_converter.string_to_136_array(pin=meld_tiles_str)
+        elif suit == 's':
+            meld_tiles = tiles_converter.string_to_136_array(sou=meld_tiles_str)
+        else:
+            meld_tiles = []
+        return meld_tiles
+    
     def submit_hand(self, room_id, winner_id, hand_data):
         """
         Submit a winning hand and distribute points using the database
@@ -149,7 +166,28 @@ class RoomManager:
         win_type = hand_data.get('win_type', '')
         winning_tile = hand_data.get('winningTile', None)
         config_data = hand_data.get('config', {})
-        result, error = point_calculator.calculate_hand(tiles, winning_tile, config_data)
+        
+        # Build melds_data from hand_data
+        melds_as_dicts = hand_data.get('melds_data', [])
+        melds_data = []
+        for meld in melds_as_dicts:
+            if meld['type'] == 'chi':
+                meld_type = Meld.CHI
+            elif meld['type'] == 'pon':
+                meld_type = Meld.PON
+            elif meld['type'] == 'kan':
+                meld_type = Meld.KAN
+
+            meld_tiles = self.create_meld_tiles(meld['tiles'])
+            if meld_tiles is None:
+                session.close()
+                return None, 'Invalid meld tiles'
+            temp_meld = Meld(meld_type=meld_type, tiles=meld_tiles, opened=True)
+
+            melds_data.append(temp_meld)
+
+        # Pass melds_data to calculate_hand
+        result, error = point_calculator.calculate_hand(tiles, winning_tile, config_data, melds_data=melds_data)
         if error:
             session.close()
             return None, error

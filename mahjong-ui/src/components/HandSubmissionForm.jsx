@@ -28,13 +28,30 @@ const tileImageMap = {
   'B': 'Haku (White Dragon).png'
 }
 
-const fiveCounts = {
-  'm': 0,
-  'p': 0,
-  's': 0
+// Helper to count normal and red 5s for each suit from tileCounts
+function getFiveCounts(tileCounts) {
+  return {
+    m: {
+      normal: tileCounts['5m'] || 0,
+      red: tileCounts['5mr'] || 0
+    },
+    p: {
+      normal: tileCounts['5p'] || 0,
+      red: tileCounts['5pr'] || 0
+    },
+    s: {
+      normal: tileCounts['5s'] || 0,
+      red: tileCounts['5sr'] || 0
+    }
+  }
 }
 
 function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
+        // Meld selection state
+        // Dynamic melds: each meld is an array of tile indices
+        const [ponMelds, setPonMelds] = useState([]); // array of arrays
+        const [chiMelds, setChiMelds] = useState([]);
+        const [kanMelds, setKanMelds] = useState([]);
       // Yaku descriptions for tooltips (from Yaku.md)
       const yakuDescriptions = {
         'Riichi': 'Declare riichi when tenpai with a closed hand, discarding face-down. Closed only.',
@@ -80,6 +97,8 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
         'Menzen Tsumo': 'Win by self-draw with a closed hand. Closed only.'
         // Add more yaku descriptions as needed
       };
+  // State for open/closed hand
+  const [isHandOpen, setIsHandOpen] = useState(false);
     // Winning hand info state
     const [winningHandInfo, setWinningHandInfo] = useState(null)
   //Game State Information
@@ -125,36 +144,20 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   const handleTileIncrement = (tile) => {
     setTileCounts(prev => {
       const current = prev[tile] || 0
-      if (['5mr', '5pr', '5sr'].includes(tile)) {
-        if (current < 1) {
-          if (tile==='5mr' && fiveCounts['m'] < 4) {
-            fiveCounts['m'] = fiveCounts['m'] + 1
-            return { ...prev, [tile]: Math.min(current + 1, 1) }
-          }
-          else if (tile==='5pr' && fiveCounts['p'] < 4) {
-            fiveCounts['p'] = fiveCounts['p'] + 1
-          }
-          else if (tile==='5sr' && fiveCounts['s'] < 4) {
-            fiveCounts['s'] = fiveCounts['s'] + 1
-          }
-          return { ...prev, [tile]: Math.min(current + 1, 1) }
+      const fiveCounts = getFiveCounts(prev)
+      if (["5mr", "5pr", "5sr"].includes(tile)) {
+        const suit = tile[1]
+        // Only allow 1 red 5, and total 5s (red + normal) <= 4
+        if (current < 1 && fiveCounts[suit].normal + fiveCounts[suit].red < 4) {
+          return { ...prev, [tile]: 1 }
         }
-      } 
-      else if (['5m', '5p', '5s'].includes(tile)) {
-        if (current < 4) {
-          if (tile==='5m' && fiveCounts['m'] < 4) {
-            fiveCounts['m'] = fiveCounts['m'] + 1
-          }
-          else if (tile==='5p' && fiveCounts['p'] < 4) {
-            fiveCounts['p'] = fiveCounts['p'] + 1
-          }
-          else if (tile==='5s' && fiveCounts['s'] < 4) {
-            fiveCounts['s'] = fiveCounts['s'] + 1
-          }
+      } else if (["5m", "5p", "5s"].includes(tile)) {
+        const suit = tile[1]
+        // Allow up to 4 non-red 5s, but total (red + normal) <= 4
+        if (current < 4 && fiveCounts[suit].normal + fiveCounts[suit].red < 4) {
+          return { ...prev, [tile]: current + 1 }
         }
-        return { ...prev, [tile]: Math.min(current + 1, 4) }
-      }
-      else if (current < 4) {
+      } else if (current < 4) {
         return { ...prev, [tile]: current + 1 }
       }
       return prev
@@ -164,37 +167,15 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
   const handleTileDecrement = (tile) => {
     setTileCounts(prev => {
       const current = prev[tile] || 0
-      if (['5mr', '5pr', '5sr'].includes(tile)) {
+      if (["5mr", "5pr", "5sr"].includes(tile)) {
         if (current > 0) {
-          // Decrement the corresponding five count
-          if (tile==='5mr' && fiveCounts['m'] > 0) {
-            fiveCounts['m'] = Math.max(0, fiveCounts['m'] - 1)
-          }
-          else if (tile==='5pr' && fiveCounts['p'] > 0) {
-            fiveCounts['p'] = Math.max(0, fiveCounts['p'] - 1)
-          }
-          else if (tile==='5sr' && fiveCounts['s'] > 0) {
-            fiveCounts['s'] = Math.max(0, fiveCounts['s'] - 1)
-          }
+          return { ...prev, [tile]: 0 }
+        }
+      } else if (["5m", "5p", "5s"].includes(tile)) {
+        if (current > 0) {
           return { ...prev, [tile]: current - 1 }
         }
-      }
-      else if (['5m', '5p', '5s'].includes(tile)) {
-        if (current > 0) {
-          // Decrement the corresponding five count
-          if (tile==='5m' && fiveCounts['m'] > 0) {
-            fiveCounts['m'] = Math.max(0, fiveCounts['m'] - 1)
-          }
-          else if (tile==='5p' && fiveCounts['p'] > 0) {
-            fiveCounts['p'] = Math.max(0, fiveCounts['p'] - 1)
-          }
-          else if (tile==='5s' && fiveCounts['s'] > 0) {
-            fiveCounts['s'] = Math.max(0, fiveCounts['s'] - 1)
-          }
-          return { ...prev, [tile]: current - 1 }
-        }
-      } 
-      else if (current > 0) {
+      } else if (current > 0) {
         return { ...prev, [tile]: current - 1 }
       }
       return prev
@@ -238,36 +219,78 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
       setError('Winning tile must be among the selected tiles')
       return
     }
+        // Build melds_data for point calculation
+        function buildMeldsData() {
+          const tiles = getSelectedTiles();
+          const melds = [];
+          ponMelds.forEach(meld => {
+            if (meld.length === 3) {
+              melds.push({ type: 'pon', tiles: meld.map(idx => tiles[idx]) , opened:true});
+            }
+          });
+          chiMelds.forEach(meld => {
+            if (meld.length === 3) {
+              melds.push({ type: 'chi', tiles: meld.map(idx => tiles[idx]) , opened:true});
+            }
+          });
+          kanMelds.forEach(meld => {
+            if (meld.length === 4) {
+              melds.push({ type: 'kan', tiles: meld.map(idx => tiles[idx]) , opened:true});
+            }
+          });
+          return melds;
+        }
 
     setLoading(true)
     setError('')
-    try {
-      const response = await client.post(`/rooms/${room.id}/hands`, {
-        winner_id: playerId,
-        hand_data: {
-          tiles: getSelectedTiles(),
-          win_type: winType,
-          winningTile: winningTile,
-          config: {
-            is_tsumo: isTsumo,
-            is_riichi: isRiichi,
-            is_ippatsu: isIppatsu,
-            is_rinshan: isRinshan,
-            is_chankan: isChankan,
-            is_haitei: isHaitei,
-            is_houtei: isHoutei,
-            is_daburu_riichi: isDaburuRiichi,
-            is_nagashi_mangan: isNagashiMangan,
-            is_tenhou: isTenhou,
-            is_renhou: isRenhou,
-            is_chiihou: isChiihou,
-            player_wind: sessionPlayer.wind,
-            round_wind: room.roundWind,
-          },
-          isDealer: sessionPlayer.wind == room.roundWind,
-          discarderId: discardingPlayer
+        // Convert melds from indices to tile arrays
+        function meldsToTiles(melds, meldSize) {
+          const tiles = getSelectedTiles();
+          return melds
+            .filter(meld => meld.length === meldSize)
+            .map(meld => meld.map(idx => tiles[idx]));
         }
-      })
+        const ponMeldsTiles = meldsToTiles(ponMelds, 3);
+        const chiMeldsTiles = meldsToTiles(chiMelds, 3);
+        const kanMeldsTiles = meldsToTiles(kanMelds, 4);
+    // Debug print melds
+    console.log('pon_meld:', ponMelds);
+    console.log('chi_meld:', chiMelds);
+    console.log('kan_meld:', kanMelds);
+   
+    try {
+          const melds_data = buildMeldsData();
+          console.log('melds_data:', melds_data)
+          const response = await client.post(`/rooms/${room.id}/hands`, {
+            winner_id: playerId,
+            hand_data: {
+              tiles: getSelectedTiles(),
+              win_type: winType,
+              winningTile: winningTile,
+              melds_data,
+              config: {
+                is_tsumo: isTsumo,
+                is_riichi: isRiichi,
+                is_ippatsu: isIppatsu,
+                is_rinshan: isRinshan,
+                is_chankan: isChankan,
+                is_haitei: isHaitei,
+                is_houtei: isHoutei,
+                is_daburu_riichi: isDaburuRiichi,
+                is_nagashi_mangan: isNagashiMangan,
+                is_tenhou: isTenhou,
+                is_renhou: isRenhou,
+                is_chiihou: isChiihou,
+                player_wind: sessionPlayer.wind,
+                round_wind: room.roundWind,
+              },
+              isDealer: sessionPlayer.wind == room.roundWind,
+              discarderId: discardingPlayer,
+              pon_meld: ponMeldsTiles,
+              chi_meld: chiMeldsTiles,
+              kan_meld: kanMeldsTiles
+            }
+          })
       // Extract winning hand info from response
       if (response.data && response.data.winning_hand_info) {
         setWinningHandInfo(response.data.winning_hand_info)
@@ -298,6 +321,9 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
       setIsDealer(sessionPlayer.wind == room.roundWind)
       setDiscardingPlayer(null)
       setDoraIndicators([])
+          setPonMelds([])
+          setChiMelds([])
+          setKanMelds([])
     } catch (err) {
       const message = err.response?.data?.error || err.message || 'Failed to submit hand'
       setError(message)
@@ -358,6 +384,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               {manTiles.map(tile => {
                 const count = tileCounts[tile] || 0
                 const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                const fiveCounts = getFiveCounts(tileCounts)
                 return (
                   <div className="tile-counter" key={tile}>
                     <div className="tile-display">
@@ -369,7 +396,15 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                         <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
                       </button>
                       <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
-                        disabled={count === 4 || (['5mr'].includes(tile) && count === 1) || (['5mr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5m' && fiveCounts[tile[1]] === 4)}
+                        disabled={(() => {
+                          if (["5mr"].includes(tile)) {
+                            return count === 1 || fiveCounts['m'].normal + fiveCounts['m'].red >= 4
+                          }
+                          if (tile === '5m') {
+                            return count === 4 || fiveCounts['m'].normal + fiveCounts['m'].red >= 4
+                          }
+                          return count === 4
+                        })()}
                         style={{ background: 'none', border: 'none', padding: 0 }}>
                         <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
                       </button>
@@ -382,6 +417,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               {pinTiles.map(tile => {
                 const count = tileCounts[tile] || 0
                 const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                const fiveCounts = getFiveCounts(tileCounts)
                 return (
                   <div className="tile-counter" key={tile}>
                     <div className="tile-display">
@@ -393,7 +429,15 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                         <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
                       </button>
                       <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
-                        disabled={count === 4 || (['5pr'].includes(tile) && count === 1) || (['5pr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5p' && fiveCounts[tile[1]] === 4)}
+                        disabled={(() => {
+                          if (["5pr"].includes(tile)) {
+                            return count === 1 || fiveCounts['p'].normal + fiveCounts['p'].red >= 4
+                          }
+                          if (tile === '5p') {
+                            return count === 4 || fiveCounts['p'].normal + fiveCounts['p'].red >= 4
+                          }
+                          return count === 4
+                        })()}
                         style={{ background: 'none', border: 'none', padding: 0 }}>
                         <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
                       </button>
@@ -406,6 +450,7 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               {souTiles.map(tile => {
                 const count = tileCounts[tile] || 0
                 const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`
+                const fiveCounts = getFiveCounts(tileCounts)
                 return (
                   <div className="tile-counter" key={tile}>
                     <div className="tile-display">
@@ -417,7 +462,15 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
                         <img src="/minus-unpressed.png" alt="-" style={{ width: 24, height: 24 }} />
                       </button>
                       <button type="button" className="tile-plus" onClick={() => handleTileIncrement(tile)}
-                        disabled={count === 4 || (['5sr'].includes(tile) && count === 1) || (['5sr'].includes(tile) && fiveCounts[tile[1]] === 4) || (tile === '5s' && fiveCounts[tile[1]] === 4)}
+                        disabled={(() => {
+                          if (["5sr"].includes(tile)) {
+                            return count === 1 || fiveCounts['s'].normal + fiveCounts['s'].red >= 4
+                          }
+                          if (tile === '5s') {
+                            return count === 4 || fiveCounts['s'].normal + fiveCounts['s'].red >= 4
+                          }
+                          return count === 4
+                        })()}
                         style={{ background: 'none', border: 'none', padding: 0 }}>
                         <img src="/plus-unpressed.png" alt="+" style={{ width: 24, height: 24 }} />
                       </button>
@@ -454,6 +507,16 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
           <br></br>
           <div className="tile-summary">
             <label className ="subsection-label">Selected Tiles</label>
+            <div style={{ marginBottom: '8px' }}>
+              <button
+                type="button"
+                className="clear-tiles-button"
+                onClick={() => setTileCounts({})}
+                disabled={getSelectedTiles().length === 0}
+              >
+                Clear
+              </button>
+            </div>
             {
               getSelectedTiles().length <= 0 && ( <p className="no-tiles">No tiles selected</p>)
             }
@@ -564,6 +627,170 @@ function HandSubmissionForm({ room, playerId, playerName, onHandSubmitted }) {
               
 
           <label className="section-label">Basic Options</label>
+          <div className="additional-info">
+              <label>
+              <input
+                type="checkbox"
+                checked={isHandOpen}
+                onChange={(e) => {
+                  setIsHandOpen(e.target.checked)
+                  if (!e.target.checked) {
+                    setPonMelds([]);
+                    setChiMelds([]);
+                    setKanMelds([]);
+                  }
+                }}
+                data-tooltip-id="hand-open-tip"
+                data-tooltip-content="Any of your melds are open/exposed"
+              />
+              <span data-tooltip-id="hand-open-tip" data-tooltip-content="Any of your melds are open/exposed">Open Hand</span>
+              <Tooltip id="hand-open-tip" place="top" />
+            </label>
+
+            {isHandOpen && (
+              <div className="meld-container">
+                <p className="subsection-label">Your hand is open/exposed.</p>
+                {/* Dynamic melds UI */}
+                <div className="meld-row">
+                  <label>Pon Melds:</label>
+                  <div style={{fontSize:'12px',color:'#888',marginBottom:'4px'}}>Indices: {JSON.stringify(ponMelds)}</div>
+                  {ponMelds.map((meld, meldIdx) => (
+                    <div key={meldIdx} className="tiles-row meld-tiles-row" style={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: '6px', border: '1px solid #ccc', borderRadius: '8px', background: '#f9f9f9', marginBottom: '8px', position:'relative' }}>
+                      {/* Render tile selection for this meld */}
+                      {meld.length < 3 ? (
+                        <div style={{display:'inline-block'}}>
+                          {getSelectedTiles().map((tile, idx) => {
+                            // Prevent duplicate selection in this meld and across all melds
+                            const allSelectedIndices = [
+                              ...ponMelds.flat(),
+                              ...chiMelds.flat(),
+                              ...kanMelds.flat()
+                            ];
+                            const alreadySelected = meld.includes(idx);
+                            const globallySelected = allSelectedIndices.includes(idx) && !alreadySelected;
+                            const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                            return (
+                              <div key={tile + '-pon-select-' + meldIdx + '-' + idx} className={`tile-counter ${(alreadySelected || globallySelected) ? 'winning-tile-selected' : ''}`}
+                                style={{display:'inline-block',cursor:(alreadySelected||globallySelected)?'not-allowed':'pointer',opacity:(alreadySelected||globallySelected)?0.5:1}}
+                                onClick={() => {
+                                  if (!alreadySelected && !globallySelected && meld.length < 3) {
+                                    setPonMelds(ponMelds.map((m,i)=>i===meldIdx?[...m,idx]:m));
+                                  }
+                                }}>
+                                <img src={imagePath} alt={tile} className="tile-image" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        meld.map((idx, tileIdx) => {
+                          const tile = getSelectedTiles()[idx];
+                          const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                          return (
+                            <div key={tile + '-pon-' + meldIdx + '-' + tileIdx} className="tile-counter">
+                              <img src={imagePath} alt={tile} className="tile-image" />
+                            </div>
+                          );
+                        })
+                      )}
+                      <button type="button" style={{position:'absolute',top:'4px',right:'4px',background:'#f44336',color:'#fff',border:'none',borderRadius:'4px',padding:'2px 8px',cursor:'pointer'}} onClick={() => setPonMelds(ponMelds.filter((_,i)=>i!==meldIdx))}>Delete</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setPonMelds([...ponMelds, []])} style={{margin:'4px'}}>+ Add Pon Meld</button>
+                </div>
+                <div className="meld-row">
+                  <label>Chi Melds:</label>
+                  <div style={{fontSize:'12px',color:'#888',marginBottom:'4px'}}>Indices: {JSON.stringify(chiMelds)}</div>
+                  {chiMelds.map((meld, meldIdx) => (
+                    <div key={meldIdx} className="tiles-row meld-tiles-row" style={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: '6px', border: '1px solid #ccc', borderRadius: '8px', background: '#f9f9f9', marginBottom: '8px', position:'relative' }}>
+                      {meld.length < 3 ? (
+                        <div style={{display:'inline-block'}}>
+                          {getSelectedTiles().map((tile, idx) => {
+                            const allSelectedIndices = [
+                              ...ponMelds.flat(),
+                              ...chiMelds.flat(),
+                              ...kanMelds.flat()
+                            ];
+                            const alreadySelected = meld.includes(idx);
+                            const globallySelected = allSelectedIndices.includes(idx) && !alreadySelected;
+                            const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                            return (
+                              <div key={tile + '-chi-select-' + meldIdx + '-' + idx} className={`tile-counter ${(alreadySelected||globallySelected)?'winning-tile-selected':''}`}
+                                style={{display:'inline-block',cursor:(alreadySelected||globallySelected)?'not-allowed':'pointer',opacity:(alreadySelected||globallySelected)?0.5:1}}
+                                onClick={() => {
+                                  if (!alreadySelected && !globallySelected && meld.length < 3) {
+                                    setChiMelds(chiMelds.map((m,i)=>i===meldIdx?[...m,idx]:m));
+                                  }
+                                }}>
+                                <img src={imagePath} alt={tile} className="tile-image" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        meld.map((idx, tileIdx) => {
+                          const tile = getSelectedTiles()[idx];
+                          const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                          return (
+                            <div key={tile + '-chi-' + meldIdx + '-' + tileIdx} className="tile-counter">
+                              <img src={imagePath} alt={tile} className="tile-image" />
+                            </div>
+                          );
+                        })
+                      )}
+                      <button type="button" style={{position:'absolute',top:'4px',right:'4px',background:'#f44336',color:'#fff',border:'none',borderRadius:'4px',padding:'2px 8px',cursor:'pointer'}} onClick={() => setChiMelds(chiMelds.filter((_,i)=>i!==meldIdx))}>Delete</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setChiMelds([...chiMelds, []])} style={{margin:'4px'}}>+ Add Chi Meld</button>
+                </div>
+                <div className="meld-row">
+                  <label>Kan Melds:</label>
+                  <div style={{fontSize:'12px',color:'#888',marginBottom:'4px'}}>Indices: {JSON.stringify(kanMelds)}</div>
+                  {kanMelds.map((meld, meldIdx) => (
+                    <div key={meldIdx} className="tiles-row meld-tiles-row" style={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: '6px', border: '1px solid #ccc', borderRadius: '8px', background: '#f9f9f9', marginBottom: '8px', position:'relative' }}>
+                      {meld.length < 4 ? (
+                        <div style={{display:'inline-block'}}>
+                          {getSelectedTiles().map((tile, idx) => {
+                            const allSelectedIndices = [
+                              ...ponMelds.flat(),
+                              ...chiMelds.flat(),
+                              ...kanMelds.flat()
+                            ];
+                            const alreadySelected = meld.includes(idx);
+                            const globallySelected = allSelectedIndices.includes(idx) && !alreadySelected;
+                            const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                            return (
+                              <div key={tile + '-kan-select-' + meldIdx + '-' + idx} className={`tile-counter ${(alreadySelected||globallySelected)?'winning-tile-selected':''}`}
+                                style={{display:'inline-block',cursor:(alreadySelected||globallySelected)?'not-allowed':'pointer',opacity:(alreadySelected||globallySelected)?0.5:1}}
+                                onClick={() => {
+                                  if (!alreadySelected && !globallySelected && meld.length < 4) {
+                                    setKanMelds(kanMelds.map((m,i)=>i===meldIdx?[...m,idx]:m));
+                                  }
+                                }}>
+                                <img src={imagePath} alt={tile} className="tile-image" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        meld.map((idx, tileIdx) => {
+                          const tile = getSelectedTiles()[idx];
+                          const imagePath = `/Tile_PNGs/${tileImageMap[tile]}`;
+                          return (
+                            <div key={tile + '-kan-' + meldIdx + '-' + tileIdx} className="tile-counter">
+                              <img src={imagePath} alt={tile} className="tile-image" />
+                            </div>
+                          );
+                        })
+                      )}
+                      <button type="button" style={{position:'absolute',top:'4px',right:'4px',background:'#f44336',color:'#fff',border:'none',borderRadius:'4px',padding:'2px 8px',cursor:'pointer'}} onClick={() => setKanMelds(kanMelds.filter((_,i)=>i!==meldIdx))}>Delete</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setKanMelds([...kanMelds, []])} style={{margin:'4px'}}>+ Add Kan Meld</button>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="additional-info">
             <label>
               <input
