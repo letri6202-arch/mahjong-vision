@@ -1,0 +1,90 @@
+@font-face {
+  font-family: 'DynaPuff';
+  src: url('/font/static/DynaPuff-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Caveat';
+  src: url('/font/Caveat-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.player-names-form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: none;
+  position: relative;
+  z-index: 1;
+  font-family: 'Caveat', sans-serif;
+}
+
+.player-names-form-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: url('/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(8px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.player-names-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 400px;
+}
+
+.player-names-container h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-family: 'Caveat', cursive;
+}
+
+.player-names-container input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 1.1rem;
+  font-family: 'DynaPuff', cursive;
+}
+
+.player-names-container button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #e0b0ff;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  font-family: 'Caveat', cursive;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.2s;
+}
+
+.player-names-container button:hover {
+  background: #d1a3ff;
+}
+
+.player-names-container .error {
+  color: #d32f2f;
+  margin-top: 1rem;
+  text-align: center;
+}
