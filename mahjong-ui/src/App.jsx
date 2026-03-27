@@ -1,67 +1,30 @@
 import { useState, useEffect } from 'react'
 import client from './api/client'
-import JoinRoom from './components/JoinRoom'
-import Lobby from './components/Lobby'
-import GameBoard from './components/GameBoard'
+import PlayerNamesForm from './components/PlayerNamesForm'
+import HandSubmissionForm2 from './components/HandSubmissionForm2'
 import './styles/App.css'
 
 function App() {
-  const [currentRoom, setCurrentRoom] = useState(null)
-  const [playerName, setPlayerName] = useState('')
+  const [playerNames, setPlayerNames] = useState(['', '', '', ''])
+  const [submitted, setSubmitted] = useState(false)
 
-  const handleRoomCreated = (room) => {
-    setCurrentRoom(room)
-    if (room.players.length > 0) {
-      setPlayerName(room.players[0].name)
-    }
+  const handleNamesSubmit = (names) => {
+    setPlayerNames(names)
+    setSubmitted(true)
   }
 
-  const handleRoomJoined = (room) => {
-    setCurrentRoom(room)
-    if (room.players.length > 0) {
-      setPlayerName(room.players[room.players.length - 1].name)
-    }
+  const handleHandSubmitted = async () => {
+    // Refresh only the hand submission form
   }
-
-  // Periodically refresh room state to catch status changes
-  useEffect(() => {
-    if (!currentRoom) return
-
-    const interval = setInterval(async () => {
-      try {
-        const response = await client.get(`/rooms/${currentRoom.id}`)
-        setCurrentRoom(response.data)
-      } catch (err) {
-        console.error('Failed to refresh room')
-      }
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [currentRoom?.id])
-
-  const handleLeaveRoom = () => {
-    setCurrentRoom(null)
-    setPlayerName('')
-  }
-
+  
   return (
     <div className="App">
-      {!currentRoom ? (
-        <JoinRoom 
-          onRoomCreated={handleRoomCreated}
-          onRoomJoined={handleRoomJoined}
-        />
-      ) : currentRoom.status === 'in-game' ? (
-        <GameBoard 
-          room={currentRoom}
-          playerName={playerName}
-          onLeave={handleLeaveRoom}
-        />
+      {!submitted ? (
+        <PlayerNamesForm onSubmit={handleNamesSubmit} />
       ) : (
-        <Lobby 
-          room={currentRoom}
-          playerName={playerName}
-          onLeave={handleLeaveRoom}
+        <HandSubmissionForm2
+          playerNames={playerNames}
+          onHandSubmitted={handleHandSubmitted}
         />
       )}
     </div>

@@ -1,7 +1,8 @@
+from collections.abc import Collection
 from unittest import result
 from mahjong.hand_calculating.hand import HandCalculator
 from mahjong.tile import TilesConverter
-from mahjong.hand_calculating.hand_config import HandConfig
+from mahjong.hand_calculating.hand_config import HandConfig, OptionalRules
 from mahjong.constants import EAST, SOUTH, WEST, NORTH
 '''
 Tiles:
@@ -49,14 +50,44 @@ ERROR_MESSAGES = {
 
 class BasicCalculator:
 
-    def calculate_hand(self, tiles, win_tile_string=None, config_data={}):
+    def calculate_hand(self, tiles_136, win_tile=None, config_data={}, melds_data=[], dora_indicators: Collection[int] | None = None, ura_dora_indicators: Collection[int] | None = None):
         print("********************************")
         print("Calculating hand value...")
-        # Initialize hand calculator and tile converter objects
         hand_calculator = HandCalculator()
         tiles_converter = TilesConverter()
-        hand_config = HandConfig()
-        #Set hand config values based on config_data
+
+        optional_rules=OptionalRules(
+            # --- Open tanyao ---
+            # Most modern rulesets (tenhou, majsoul, most club play) allow this
+            has_open_tanyao=True,           # default: False
+             # --- Aka dora (red fives) ---
+            # Standard in modern play: one red five per suit (3 total)
+            has_aka_dora=True,              # default: False
+
+            # --- Renhou ---
+            # Winning by ron on the first go-around as a non-dealer
+            # Value varies by ruleset — mangan or yakuman
+            renhou_as_yakuman=False,        # default: False (treated as mangan)
+
+            # --- Kazoe yakuman ---
+            # What happens when han count reaches 13+
+            # KAZOE_LIMITED = capped at yakuman, KAZOE_NO_LIMIT = count every han
+            kazoe_limit=HandConfig.KAZOE_LIMITED,   # default: KAZOE_LIMITED
+
+            # --- Kiriage mangan ---
+            # Round up 4 han 30 fu / 3 han 60 fu to mangan
+            # Used in some rulesets, not standard on tenhou
+            kiriage=False,                  # default: False
+
+            # --- Double yakuman ---
+            # Some yakuman hands count as double (e.g. pure nine gates, four concealed quads)
+            has_double_yakuman=True,        # default: True
+
+            # --- Sashikomi ---
+            # When a player deals into a hand that only wins due to yakitori/special conditions
+            # Rarely toggled directly
+        )
+
         hand_config = HandConfig(
             is_tsumo=config_data.get('is_tsumo', False),
             is_riichi=config_data.get('is_riichi', False),
@@ -72,69 +103,20 @@ class BasicCalculator:
             is_chiihou=config_data.get('is_chiihou', False),
             player_wind=windMap.get(config_data.get('player_wind', 'E')),
             round_wind=windMap.get(config_data.get('round_wind', 'E')),
+            options=optional_rules
         )
-        
-        #Convert input tiles into a string
-        z, m, p, s = [], [], [], []
 
-        for tile in tiles:
-            if tile in honorMap:
-                z.append(tile)
-            elif tile[1] == 'm':
-                if tile.endswith('r'):
-                    m.append('0')  # red five becomes 0
-                else:
-                    m.append(tile[0])
-            elif tile[1] == 'p':
-                if tile.endswith('r'):
-                    p.append('0')
-                else:
-                    p.append(tile[0])
-            elif tile[1] == 's':
-                if tile.endswith('r'):
-                    s.append('0')
-                else:
-                    s.append(tile[0])
-            tiles_string = ''
-        if z:
-            tiles_string += ''.join([honorMap[t] for t in z]) + 'z'
-        if m:
-            tiles_string += ''.join(m) + 'm'
-        if p:
-            tiles_string += ''.join(p) + 'p'
-        if s:         
-            tiles_string += ''.join(s) + 's'
-        print('Tiles inputted (as string): ' + tiles_string)
-        tiles = tiles_converter.one_line_string_to_136_array(tiles_string)
-
-        win_tile = None
-        match win_tile_string[1] if len(win_tile_string) > 1 else win_tile_string:
-            case 'm':
-                win_tile_val = '0' if win_tile_string.endswith('r') else win_tile_string[0]
-                win_tile = tiles_converter.string_to_136_array(man=win_tile_val)[0]
-            case 'p':
-                win_tile_val = '0' if win_tile_string.endswith('r') else win_tile_string[0]
-                win_tile = tiles_converter.string_to_136_array(pin=win_tile_val)[0]
-            case 's':
-                win_tile_val = '0' if win_tile_string.endswith('r') else win_tile_string[0]
-                win_tile = tiles_converter.string_to_136_array(sou=win_tile_val)[0]
-            case _:
-                win_tile = tiles_converter.string_to_136_array(honors=honorMap[win_tile_string])[0]
-        print ("Inputted winning tile was " + win_tile_string)
-
-        result = hand_calculator.estimate_hand_value(tiles, win_tile, config=hand_config)
-
-        print(f"Tiles string: {tiles_string}")
-        print(f"Win tile string: {win_tile_string}")
-        print(f"Tiles 136: {tiles}")
+        result = hand_calculator.estimate_hand_value(tiles_136, win_tile, melds=melds_data, config=hand_config, dora_indicators=dora_indicators)
         print(f"Win tile 136: {win_tile}")
         print(f"Is riichi: {hand_config.is_riichi}")
         print(f"Result error: {result.error}")
         print(f"Calculated hand value: {result.han}")
         print(f"Calculated yaku: {result.yaku}")
-        print(f"Main = {result.cost['main']}")
-        print(f"Additional = {result.cost['additional']}")
+        if not result.error:
+            print(f"Main = {result.cost['main']}")
+            print(f"Additional = {result.cost['additional']}")
         print("********************************")
+
         if result.error:
             print(f"Error calculating hand: {result.error}")
             friendly_message = ERROR_MESSAGES.get(result.error, f"Unknown error: {result.error}")
@@ -145,8 +127,11 @@ def main():
     calculator = BasicCalculator()
     tiles = ['1m', '1m', '1m', '2m', '2m', '2m', '3m', '3m', '3m', '4m', '4m', '4m', 'E', 'E']
     win_tile_string = 'E'
-    result = calculator.calculate_hand(tiles, win_tile_string)
-    print(f"Han: {result.han}, Fu: {result.fu}, Yaku: {result.yaku}")
+    result, error = calculator.calculate_hand(tiles, win_tile_string)
+    if error:
+        print(f"Error calculating hand: {error}")
+    else:
+        print(f"Han: {result.han}, Fu: {result.fu}, Yaku: {result.yaku}")
 
 if __name__ == "__main__":
     main()
