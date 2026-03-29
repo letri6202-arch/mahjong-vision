@@ -1,10 +1,108 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Tooltip } from "react-tooltip";
 import client from "../api/client";
 import { useRef, useEffect } from "react";
 
 // Styling
 import "../styles/HandSubmissionForm2.css";
+
+// Camera capture component
+function CameraCapture({ onCapture, onClose }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [error, setError] = useState("");
+
+  // Start camera on mount
+  // Modal overlay with video feed and capture button, cancel button, and error message if camera access fails
+  //  - On Capture, draw video frame to canvas, convert to blob, and pass blob URL and blob to parent via onCapture callback
+  //      - Image is a JPEG image blob created from the canvas, and URL is a blob URL created from that blob for previewing if needed
+  //  - On unmount, stop camera stream
+
+  React.useEffect(() => {
+    let stream;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        setError("Could not access camera: " + err.message);
+      }
+    })();
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const handleCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (video && canvas) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          onCapture(url, blob);
+        }
+      }, "image/jpeg");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        background: "rgba(0,0,0,0.8)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          padding: 16,
+          borderRadius: 8,
+          textAlign: "center",
+        }}
+      >
+        <h3>Capture Mahjong Hand</h3>
+        {error && <div style={{ color: "red" }}>{error}</div>}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          style={{
+            width: 320,
+            height: 240,
+            borderRadius: 8,
+            background: "#222",
+          }}
+        />
+        <br />
+        <button onClick={handleCapture} style={{ margin: 8 }}>
+          Capture
+        </button>
+        <button onClick={onClose} style={{ margin: 8 }}>
+          Cancel
+        </button>
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+      </div>
+    </div>
+  );
+}
 
 /* Tile Information */
 const TILES = [
@@ -164,6 +262,46 @@ const handleClearAllTiles = () => {
 };
 
 function HandSubmissionForm2({ playerNames, onHandSubmitted }) {
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedBlob, setCapturedBlob] = useState(null);
+  const [processingResult, setProcessingResult] = useState(null);
+  const [processingError, setProcessingError] = useState("");
+
+  // Handler for camera capture
+  const handleOpenCamera = () => setShowCamera(true);
+  const handleCloseCamera = () => setShowCamera(false);
+  // Accepts both URL and Blob
+  const handleImageCapture = (imgUrl, blob) => {
+    setCapturedImage(imgUrl);
+    setCapturedBlob(blob);
+    setShowCamera(false);
+    setProcessingResult(null);
+    setProcessingError("");
+  };
+
+  // Upload captured image to backend
+  const handleUploadAndProcess = async () => {
+    if (!capturedBlob) return;
+    setProcessingResult(null);
+    setProcessingError("");
+    const formData = new FormData();
+    formData.append("image", capturedBlob, "capture.jpg");
+    try {
+      console.log("Uploading image for processing...");
+      const response = await fetch("http://localhost:5000/process_image", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Processing failed");
+      console.log("Processing result:", data);
+      setProcessingResult(data);
+      console.log(data);
+    } catch (err) {
+      setProcessingError(err.message);
+    }
+  };
   // Mute state for audio
   const [isMuted, setIsMuted] = useState(true);
   // Edit mode for manual score editing
@@ -558,7 +696,13 @@ function HandSubmissionForm2({ playerNames, onHandSubmitted }) {
       {/* <div className="hand-submission-form-background" /> */}
 
       <div className="hand-submission-container">
-        <div style={{ marginBottom: "12px", display: "flex", justifyContent: "flex-end" }}>
+        <div
+          style={{
+            marginBottom: "12px",
+            display: "flex",
+            justifyContent: "flex-end",
+          }}
+        >
           <button
             type="button"
             onClick={() => setShowGameControls((prev) => !prev)}
@@ -651,8 +795,6 @@ function HandSubmissionForm2({ playerNames, onHandSubmitted }) {
             </div>
           </div>
         )}
-        
-
         <h2 className="section-label">Scoreboard</h2>
         <ul>
           {playerData &&
@@ -935,9 +1077,78 @@ function HandSubmissionForm2({ playerNames, onHandSubmitted }) {
         {/* All content below controlled by isDraw */}
         {!isDraw && (
           <>
-            {/* All other divs and form sections below */}
-            {/* ...existing code... */}
-
+            {/* Camera UI overlay */}
+            {showCamera && (
+              <CameraCapture
+                onCapture={handleImageCapture}
+                onClose={handleCloseCamera}
+              />
+            )}
+            {/* Camera capture button and preview, with upload and backend response */}
+            <div style={{ marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={handleOpenCamera}
+                style={{
+                  padding: "8px 16px",
+                  fontWeight: "bold",
+                  borderRadius: 6,
+                  border: "1px solid #aaa",
+                  cursor: "pointer",
+                }}
+              >
+                📷 Capture Mahjong Hand
+              </button>
+              {capturedImage && (
+                <div style={{ marginTop: 8 }}>
+                  <img
+                    src={capturedImage}
+                    alt="Captured Mahjong Hand"
+                    style={{
+                      maxWidth: 320,
+                      maxHeight: 240,
+                      borderRadius: 8,
+                      border: "1px solid #888",
+                    }}
+                  />
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={handleUploadAndProcess}
+                      style={{
+                        padding: "6px 16px",
+                        fontWeight: "bold",
+                        borderRadius: 6,
+                        border: "1px solid #4a4",
+                        background: "#e0ffe0",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ⬆️ Upload & Process
+                    </button>
+                  </div>
+                  {processingResult && (
+                    <div style={{ marginTop: 8, color: "#080" }}>
+                      <strong>Backend Response:</strong>
+                      <pre
+                        style={{
+                          background: "#f4f4f4",
+                          padding: 8,
+                          borderRadius: 4,
+                        }}
+                      >
+                        {JSON.stringify(processingResult, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {processingError && (
+                    <div style={{ marginTop: 8, color: "#a00" }}>
+                      <strong>Error:</strong> {processingError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <div className="form-section">
               <label className="section-label">Select Round Wind</label>
               <div className="wind-options">
