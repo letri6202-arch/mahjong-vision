@@ -23,6 +23,16 @@ def submit_hand():
     # room_result contains both room and winning_hand_info
     return jsonify(room_result), 200
 
+@rooms_bp.route('/submit_draw', methods=['POST'])
+def submit_draw():
+    """Submit a draw and distribute points for tenpai players"""
+    data = request.get_json()
+    players = data.get('players', [])
+    room_result, error = score_calculator.submit_draw(players)
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify(room_result), 200
+
 @rooms_bp.route('/capture_image', methods=['POST'])
 def capture_image_route():
     """Capture an image from the camera and return the file path."""
@@ -46,13 +56,3 @@ def process_image_route():
     # Call tile detection
     detection_result = detect_tiles(img)
     return jsonify({'message': 'Image processed', 'detection': detection_result}), 200
-
-@rooms_bp.route('/submit_draw', methods=['POST'])
-def submit_draw():
-    """Submit a draw and distribute points for tenpai players"""
-    data = request.get_json()
-    players = data.get('players', [])
-    room_result, error = score_calculator.submit_draw(players)
-    if error:
-        return jsonify({'error': error}), 400
-    return jsonify(room_result), 200
